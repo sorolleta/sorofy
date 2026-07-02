@@ -235,24 +235,8 @@ h1 {
   flex-shrink: 0;
 }
 
-/* ---- Reseñas ---- */
+/* ---- Notas ---- */
 .accent {
-  color: var(--accent);
-}
-
-.stars {
-  position: relative;
-  display: inline-block;
-  color: #555;
-  letter-spacing: 2px;
-}
-
-.stars-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  overflow: hidden;
-  white-space: nowrap;
   color: var(--accent);
 }
 
@@ -282,7 +266,7 @@ h1 {
   vertical-align: middle;
 }
 
-.review-list {
+.note-list {
   list-style: none;
   padding: 0;
   display: flex;
@@ -290,7 +274,7 @@ h1 {
   gap: 0.6rem;
 }
 
-.review-card {
+.note-card {
   display: flex;
   gap: 0.9rem;
   background: var(--surface);
@@ -298,54 +282,50 @@ h1 {
   padding: 0.9rem 1rem;
 }
 
-.review-body {
+.note-body {
   flex: 1;
 }
 
-.review-body p {
+.note-body p {
   margin: 0.2rem 0;
 }
 
-.review-text {
+/* El motivo humano en grande; el formato (canción, álbum...) en pequeño */
+.note-text {
   white-space: pre-wrap;
+  font-size: 1.05rem;
 }
 
-.review-actions {
+.note-item {
+  font-size: 0.85rem;
+}
+
+.note-actions {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   align-items: flex-end;
 }
 
-.review-actions .btn-link {
+.note-actions .btn-link {
   margin-left: 0;
 }
 
-.review-form {
+.note-form {
   background: var(--surface);
   border-radius: 12px;
   padding: 1rem 1.2rem;
   margin-bottom: 1.5rem;
 }
 
-.review-form h2 {
+.note-form h2 {
   margin-top: 0;
   font-size: 1.1rem;
 }
 
-.rating-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 0.8rem;
-}
-
-.rating-row input[type="range"] {
-  accent-color: var(--accent);
-  width: 180px;
-}
-
-.review-form textarea,
+.note-form textarea,
+.note-form input,
+.new-group input,
 .search-form input {
   width: 100%;
   background: var(--bg);
@@ -356,15 +336,73 @@ h1 {
   font: inherit;
 }
 
-.review-form textarea {
+.note-form textarea {
   resize: vertical;
 }
 
-.review-form-actions {
+.note-form-actions {
   display: flex;
   align-items: center;
   gap: 0.8rem;
   margin-top: 0.8rem;
+}
+
+/* ---- Vibes ---- */
+.vibe-chip {
+  display: inline-block;
+  background: var(--bg);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.25rem 0.8rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 50%);
+}
+
+.vibe-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.vibe-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.vibe-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.vibe-emoji {
+  background: var(--bg);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  padding: 0.15rem 0.35rem;
+  cursor: pointer;
+}
+
+.vibe-swatch.selected,
+.vibe-emoji.selected {
+  border-color: var(--text);
+}
+
+.new-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.new-group .btn-sm {
+  align-self: flex-start;
+  margin-left: 0;
 }
 
 .search-form {

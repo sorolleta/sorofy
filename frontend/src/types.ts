@@ -66,9 +66,17 @@ export interface SearchItem {
   imageUrl: string | null;
 }
 
+// Los artistas no tienen "artista de": son ellos mismos
+export interface SearchArtist {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+}
+
 export interface SearchResponse {
   albums: SearchItem[];
   tracks: SearchItem[];
+  artists: SearchArtist[];
 }
 
 export interface ChatMessage {
@@ -90,15 +98,32 @@ export interface Conversation {
   };
 }
 
-export interface Review {
+// Cualquier cosa musical sobre la que se escribe: canción, álbum, artista
+// de Spotify o grupo local creado por los usuarios (sin spotifyId)
+export interface MusicItem {
   id: string;
-  itemType: "album" | "track";
-  spotifyItemId: string;
-  itemName: string;
-  artistName: string;
+  type: "album" | "track" | "artist" | "localGroup";
+  spotifyId: string | null;
+  name: string;
+  artistName: string | null;
   imageUrl: string | null;
-  rating: number;
+  description: string | null;
+}
+
+export interface Note {
+  id: string;
+  item: MusicItem;
   text: string | null;
+  vibeColor: string | null;
+  vibeEmoji: string | null;
+  vibeLabel: string | null;
   createdAt: string;
   updatedAt: string | null;
+}
+
+export interface LocalGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
 }

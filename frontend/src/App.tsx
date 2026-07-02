@@ -5,7 +5,7 @@ import Profile from "./pages/Profile";
 import People from "./pages/People";
 import UserDetail from "./pages/UserDetail";
 import Feed from "./pages/Feed";
-import Reviews from "./pages/Reviews";
+import Notes from "./pages/Notes";
 import Chats from "./pages/Chats";
 import ChatThread from "./pages/ChatThread";
 
@@ -38,7 +38,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <Link to="/perfil">Mi perfil</Link>
         <Link to="/gente">Gente</Link>
         <Link to="/feed">Feed</Link>
-        <Link to="/resenas">Reseñas</Link>
+        <Link to="/notas">Notas</Link>
         <Link to="/chats">Chats</Link>
         <button className="btn-link" onClick={logout}>
           Salir
@@ -59,7 +59,9 @@ export default function App() {
         <Route path="/gente" element={<Layout><People /></Layout>} />
         <Route path="/gente/:id" element={<Layout><UserDetail /></Layout>} />
         <Route path="/feed" element={<Layout><Feed /></Layout>} />
-        <Route path="/resenas" element={<Layout><Reviews /></Layout>} />
+        <Route path="/notas" element={<Layout><Notes /></Layout>} />
+        {/* La ruta vieja de reseñas lleva a las notas, su sucesora */}
+        <Route path="/resenas" element={<Navigate to="/notas" replace />} />
         <Route path="/chats" element={<Layout><Chats /></Layout>} />
         <Route path="/chats/:id" element={<Layout><ChatThread /></Layout>} />
       </Routes>

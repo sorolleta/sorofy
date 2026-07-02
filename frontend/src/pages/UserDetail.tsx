@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
-import type { UserProfile, Affinity, Review } from "../types";
+import type { UserProfile, Affinity, Note } from "../types";
 import TopsPanel from "../components/TopsPanel";
-import ReviewList from "../components/ReviewList";
+import NoteList from "../components/NoteList";
 
 export default function UserDetail() {
   const { id } = useParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [affinity, setAffinity] = useState<Affinity | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [error, setError] = useState("");
 
   const load = () => {
     api.get<UserProfile>(`/api/users/${id}`).then(setProfile).catch(() => setError("Este perfil no existe o no se pudo cargar"));
     api.get<Affinity>(`/api/users/${id}/affinity`).then(setAffinity).catch(() => {});
-    api.get<Review[]>(`/api/users/${id}/reviews`).then(setReviews).catch(() => {});
+    api.get<Note[]>(`/api/users/${id}/notes`).then(setNotes).catch(() => {});
   };
 
   useEffect(load, [id]);
@@ -78,8 +78,8 @@ export default function UserDetail() {
       <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
 
       <section>
-        <h2>Sus reseñas</h2>
-        <ReviewList reviews={reviews} />
+        <h2>Su bitácora</h2>
+        <NoteList notes={notes} />
       </section>
     </>
   );

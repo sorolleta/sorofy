@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { MyProfile, NowPlaying, Review } from "../types";
+import type { MyProfile, NowPlaying, Note } from "../types";
 import TopsPanel from "../components/TopsPanel";
-import ReviewList from "../components/ReviewList";
+import NoteList from "../components/NoteList";
 
 export default function Profile() {
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
 
   const load = () => {
     api.get<MyProfile>("/api/me").then(setProfile).catch(() => setError("No se pudo cargar el perfil"));
     api.get<NowPlaying>("/api/me/now-playing").then(setNowPlaying).catch(() => {});
-    api.get<Review[]>("/api/reviews/mine").then(setReviews).catch(() => {});
+    api.get<Note[]>("/api/notes/mine").then(setNotes).catch(() => {});
   };
 
   useEffect(load, []);
@@ -59,10 +59,10 @@ export default function Profile() {
       <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
 
       <section>
-        <h2>Mis reseñas</h2>
-        <ReviewList reviews={reviews} />
+        <h2>Mi bitácora</h2>
+        <NoteList notes={notes} />
         <p className="muted">
-          Se escriben y editan desde <Link to="/resenas">Reseñas</Link>.
+          Las notas se escriben y editan desde <Link to="/notas">Notas</Link>.
         </p>
       </section>
     </>
