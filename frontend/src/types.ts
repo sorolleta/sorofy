@@ -53,6 +53,18 @@ export interface FeedItem {
   nowPlaying: { track: string; artist: string } | null;
 }
 
+export interface NoteAuthor {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+// Una tarjeta del feed de descubrimiento: la nota y quién la escribió
+export interface FeedEntry {
+  author: NoteAuthor;
+  note: Note;
+}
+
 export interface Affinity {
   score: number;
   commonArtists: string[];

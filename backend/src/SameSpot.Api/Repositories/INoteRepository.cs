@@ -6,6 +6,8 @@ public interface INoteRepository
 {
     Task<List<Note>> GetByUserAsync(Guid userId);
     Task<Note?> GetByIdAsync(Guid id);
+    Task<List<Note>> GetRecentByAuthorsAsync(List<Guid> authorIds, int limit);
+    Task<List<Note>> GetRecentExcludingAuthorsAsync(List<Guid> excludedAuthorIds, int limit);
     Task AddAsync(Note note);
     void Remove(Note note);
     Task SaveChangesAsync();

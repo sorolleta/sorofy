@@ -140,6 +140,12 @@ h1 {
   height: 44px;
 }
 
+.avatar-xs {
+  width: 24px;
+  height: 24px;
+  font-size: 0.7rem;
+}
+
 .avatar-placeholder {
   display: flex;
   align-items: center;
@@ -288,6 +294,29 @@ h1 {
 
 .note-body p {
   margin: 0.2rem 0;
+}
+
+.note-author {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.note-author a {
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+/* La franja de "sonando ahora" encima del feed de notas */
+.listening-strip {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.listening-strip p {
+  margin: 0.25rem 0;
 }
 
 /* El motivo humano en grande; el formato (canción, álbum...) en pequeño */

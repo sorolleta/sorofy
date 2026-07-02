@@ -39,6 +39,7 @@ builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddScoped<FeedService>();
+builder.Services.AddSingleton<FeedRanker>();
 builder.Services.AddSingleton<MusicAffinityCalculator>();
 builder.Services.AddScoped<AffinityService>();
 builder.Services.AddSingleton<JwtService>();

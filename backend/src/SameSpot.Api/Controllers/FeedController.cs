@@ -10,8 +10,21 @@ namespace SameSpot.Api.Controllers;
 [Route("api/feed")]
 public class FeedController(FeedService feedService) : ControllerBase
 {
-    // Qué están escuchando ahora mismo los usuarios que sigo
+    // El feed de descubrimiento: tarjetas de notas rankeadas por el
+    // algoritmo invisible (afinidad + frescura + 20% de horizonte)
     [HttpGet]
-    public async Task<IActionResult> GetFeed() =>
-        Ok(await feedService.GetFeedAsync(User.GetUserId()));
+    public async Task<IActionResult> GetNotesFeed()
+    {
+        var notes = await feedService.GetNotesFeedAsync(User.GetUserId());
+        return Ok(notes.Select(n => new
+        {
+            Author = new { n.User.Id, n.User.DisplayName, n.User.AvatarUrl },
+            Note = NotesController.ToResponse(n),
+        }));
+    }
+
+    // Qué están escuchando ahora mismo los usuarios que sigo
+    [HttpGet("now-playing")]
+    public async Task<IActionResult> GetNowPlaying() =>
+        Ok(await feedService.GetNowPlayingFeedAsync(User.GetUserId()));
 }
