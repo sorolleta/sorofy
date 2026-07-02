@@ -5,6 +5,7 @@ import Profile from "./pages/Profile";
 import People from "./pages/People";
 import UserDetail from "./pages/UserDetail";
 import Feed from "./pages/Feed";
+import Reviews from "./pages/Reviews";
 
 function Login() {
   if (getToken()) return <Navigate to="/perfil" replace />;
@@ -35,6 +36,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <Link to="/perfil">Mi perfil</Link>
         <Link to="/gente">Gente</Link>
         <Link to="/feed">Feed</Link>
+        <Link to="/resenas">Reseñas</Link>
         <button className="btn-link" onClick={logout}>
           Salir
         </button>
@@ -54,6 +56,7 @@ export default function App() {
         <Route path="/gente" element={<Layout><People /></Layout>} />
         <Route path="/gente/:id" element={<Layout><UserDetail /></Layout>} />
         <Route path="/feed" element={<Layout><Feed /></Layout>} />
+        <Route path="/resenas" element={<Layout><Reviews /></Layout>} />
       </Routes>
     </BrowserRouter>
   );

@@ -230,3 +230,157 @@ h1 {
 .user-card p {
   margin: 0.15rem 0 0;
 }
+
+.user-card .btn-sm {
+  flex-shrink: 0;
+}
+
+/* ---- Reseñas ---- */
+.accent {
+  color: var(--accent);
+}
+
+.stars {
+  position: relative;
+  display: inline-block;
+  color: #555;
+  letter-spacing: 2px;
+}
+
+.stars-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.cover {
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.badge {
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.review-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.review-card {
+  display: flex;
+  gap: 0.9rem;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+
+.review-body {
+  flex: 1;
+}
+
+.review-body p {
+  margin: 0.2rem 0;
+}
+
+.review-text {
+  white-space: pre-wrap;
+}
+
+.review-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-end;
+}
+
+.review-actions .btn-link {
+  margin-left: 0;
+}
+
+.review-form {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.review-form h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.rating-row input[type="range"] {
+  accent-color: var(--accent);
+  width: 180px;
+}
+
+.review-form textarea,
+.search-form input {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+}
+
+.review-form textarea {
+  resize: vertical;
+}
+
+.review-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.search-form {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.search-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .search-results {
+    grid-template-columns: 1fr;
+  }
+}

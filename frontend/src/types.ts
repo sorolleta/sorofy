@@ -58,3 +58,28 @@ export interface Affinity {
   commonArtists: string[];
   commonTracks: string[];
 }
+
+export interface SearchItem {
+  id: string;
+  name: string;
+  artistName: string;
+  imageUrl: string | null;
+}
+
+export interface SearchResponse {
+  albums: SearchItem[];
+  tracks: SearchItem[];
+}
+
+export interface Review {
+  id: string;
+  itemType: "album" | "track";
+  spotifyItemId: string;
+  itemName: string;
+  artistName: string;
+  imageUrl: string | null;
+  rating: number;
+  text: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}

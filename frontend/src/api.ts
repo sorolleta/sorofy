@@ -33,13 +33,28 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error("Sesión caducada");
   }
   if (!response.ok) {
-    throw new Error(`Error ${response.status}`);
+    // La API devuelve { message } en los errores controlados
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.message ?? `Error ${response.status}`);
+  }
+  if (response.status === 204) {
+    return undefined as T;
   }
   return response.json() as Promise<T>;
 }
 
+function withJsonBody(method: string, body?: unknown): RequestInit {
+  if (body === undefined) return { method };
+  return {
+    method,
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+  };
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string) => request<T>(path, { method: "POST" }),
+  post: <T>(path: string, body?: unknown) => request<T>(path, withJsonBody("POST", body)),
+  put: <T>(path: string, body?: unknown) => request<T>(path, withJsonBody("PUT", body)),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { MyProfile, NowPlaying } from "../types";
+import type { MyProfile, NowPlaying, Review } from "../types";
 import TopsPanel from "../components/TopsPanel";
+import ReviewList from "../components/ReviewList";
 
 export default function Profile() {
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
 
   const load = () => {
     api.get<MyProfile>("/api/me").then(setProfile).catch(() => setError("No se pudo cargar el perfil"));
     api.get<NowPlaying>("/api/me/now-playing").then(setNowPlaying).catch(() => {});
+    api.get<Review[]>("/api/reviews/mine").then(setReviews).catch(() => {});
   };
 
   useEffect(load, []);
@@ -53,6 +57,14 @@ export default function Profile() {
         </div>
       </header>
       <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
+
+      <section>
+        <h2>Mis reseñas</h2>
+        <ReviewList reviews={reviews} />
+        <p className="muted">
+          Se escriben y editan desde <Link to="/resenas">Reseñas</Link>.
+        </p>
+      </section>
     </>
   );
 }
