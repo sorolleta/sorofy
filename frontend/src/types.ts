@@ -1,0 +1,60 @@
+export interface TopArtist {
+  spotifyArtistId: string;
+  name: string;
+  genres: string[];
+  rank: number;
+}
+
+export interface TopTrack {
+  spotifyTrackId: string;
+  name: string;
+  artistName: string;
+  rank: number;
+}
+
+export interface MyProfile {
+  id: string;
+  spotifyId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  topArtists: TopArtist[];
+  topTracks: TopTrack[];
+  lastSync: string | null;
+}
+
+export interface UserSummary {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  isFollowedByMe: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  followers: number;
+  following: number;
+  isFollowedByMe: boolean;
+  topArtists: TopArtist[];
+  topTracks: TopTrack[];
+}
+
+export interface NowPlaying {
+  playing: boolean;
+  track?: string;
+  artist?: string;
+}
+
+export interface FeedItem {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  nowPlaying: { track: string; artist: string } | null;
+}
+
+export interface Affinity {
+  score: number;
+  commonArtists: string[];
+  commonTracks: string[];
+}

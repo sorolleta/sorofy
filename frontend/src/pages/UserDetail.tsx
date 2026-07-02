@@ -1,0 +1,73 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { api } from "../api";
+import type { UserProfile, Affinity } from "../types";
+import TopsPanel from "../components/TopsPanel";
+
+export default function UserDetail() {
+  const { id } = useParams();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [affinity, setAffinity] = useState<Affinity | null>(null);
+  const [error, setError] = useState("");
+
+  const load = () => {
+    api.get<UserProfile>(`/api/users/${id}`).then(setProfile).catch(() => setError("Este perfil no existe o no se pudo cargar"));
+    api.get<Affinity>(`/api/users/${id}/affinity`).then(setAffinity).catch(() => {});
+  };
+
+  useEffect(load, [id]);
+
+  const toggleFollow = async () => {
+    if (!profile) return;
+    if (profile.isFollowedByMe) {
+      await api.delete(`/api/users/${profile.id}/follow`);
+    } else {
+      await api.post(`/api/users/${profile.id}/follow`);
+    }
+    load();
+  };
+
+  if (error) return <p className="error">{error}</p>;
+  if (!profile) return <p>Cargando…</p>;
+
+  return (
+    <>
+      <header className="profile-header">
+        {profile.avatarUrl && <img className="avatar" src={profile.avatarUrl} alt="" />}
+        <div>
+          <h1>{profile.displayName}</h1>
+          <p className="muted">
+            {profile.followers} seguidores · sigue a {profile.following}
+          </p>
+          <button className="btn" onClick={toggleFollow}>
+            {profile.isFollowedByMe ? "Dejar de seguir" : "Seguir"}
+          </button>
+        </div>
+        {affinity && (
+          <div className="affinity">
+            <span className="affinity-score">{affinity.score}%</span>
+            <span className="muted">afinidad musical</span>
+          </div>
+        )}
+      </header>
+
+      {affinity && (affinity.commonArtists.length > 0 || affinity.commonTracks.length > 0) && (
+        <section className="common">
+          <h2>En común</h2>
+          {affinity.commonArtists.length > 0 && (
+            <p>
+              <strong>Artistas:</strong> {affinity.commonArtists.join(", ")}
+            </p>
+          )}
+          {affinity.commonTracks.length > 0 && (
+            <p>
+              <strong>Canciones:</strong> {affinity.commonTracks.join(" · ")}
+            </p>
+          )}
+        </section>
+      )}
+
+      <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
+    </>
+  );
+}
