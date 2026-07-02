@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import type { UserProfile, Affinity, Review } from "../types";
 import TopsPanel from "../components/TopsPanel";
@@ -42,9 +42,14 @@ export default function UserDetail() {
           <p className="muted">
             {profile.followers} seguidores · sigue a {profile.following}
           </p>
-          <button className="btn" onClick={toggleFollow}>
-            {profile.isFollowedByMe ? "Dejar de seguir" : "Seguir"}
-          </button>
+          <div className="profile-actions">
+            <button className="btn" onClick={toggleFollow}>
+              {profile.isFollowedByMe ? "Dejar de seguir" : "Seguir"}
+            </button>
+            <Link className="btn btn-outline" to={`/chats/${profile.id}`}>
+              Enviar mensaje
+            </Link>
+          </div>
         </div>
         {affinity && (
           <div className="affinity">

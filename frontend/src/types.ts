@@ -71,6 +71,25 @@ export interface SearchResponse {
   tracks: SearchItem[];
 }
 
+export interface ChatMessage {
+  id: number;
+  senderId: string;
+  recipientId: string;
+  text: string;
+  sentAt: string;
+}
+
+export interface Conversation {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  lastMessage: {
+    text: string;
+    sentAt: string;
+    fromMe: boolean;
+  };
+}
+
 export interface Review {
   id: string;
   itemType: "album" | "track";

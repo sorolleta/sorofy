@@ -1,6 +1,6 @@
 // Cliente HTTP mínimo: añade el JWT a cada petición y expulsa al login si caduca.
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:5000";
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:5000";
 
 export function getToken(): string | null {
   return localStorage.getItem("token");
@@ -16,6 +16,17 @@ export function clearToken() {
 
 export function loginUrl(): string {
   return `${API_URL}/api/auth/spotify/login`;
+}
+
+// El id del usuario logueado, leído del payload del JWT (claim "sub")
+export function getMyUserId(): string | null {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split(".")[1])).sub ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
