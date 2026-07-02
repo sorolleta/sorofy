@@ -8,6 +8,10 @@ public class User
     public string? AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // La playlist "Mis Descubrimientos de SameSpot" en su Spotify; se crea
+    // la primera vez que guarda una canción
+    public string? DiscoveriesPlaylistId { get; set; }
+
     public SpotifyToken? SpotifyToken { get; set; }
 
     public List<TopArtist> TopArtists { get; set; } = [];

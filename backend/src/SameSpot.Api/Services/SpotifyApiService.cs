@@ -58,6 +58,22 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
             userId, $"https://api.spotify.com/v1/artists/{Uri.EscapeDataString(artistId)}");
     }
 
+    // La playlist privada "Mis Descubrimientos": se crea una vez por usuario
+    public async Task<string> CreatePlaylistAsync(Guid userId, string name, string description)
+    {
+        var playlist = await PostAsync<SpotifyPlaylistDto>(
+            userId, "https://api.spotify.com/v1/me/playlists",
+            new { name, description, @public = false });
+        return playlist!.Id;
+    }
+
+    public Task AddPlaylistTrackAsync(Guid userId, string playlistId, string trackId)
+    {
+        return PostAsync<object>(
+            userId, $"https://api.spotify.com/v1/playlists/{Uri.EscapeDataString(playlistId)}/items",
+            new { uris = new[] { $"spotify:track:{trackId}" } });
+    }
+
     // Spotify responde 404 si el id no existe y 400 si ni siquiera tiene
     // formato de id: para nosotros ambos significan "no existe"
     private async Task<T?> GetItemOrNullAsync<T>(Guid userId, string url) where T : class
@@ -85,6 +101,20 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
         {
             return null;
         }
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<T>();
+    }
+
+    private async Task<T?> PostAsync<T>(Guid userId, string url, object body) where T : class
+    {
+        var accessToken = await tokenService.GetValidAccessTokenAsync(userId);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = JsonContent.Create(body);
+
+        var response = await http.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<T>();
@@ -134,3 +164,5 @@ public record SpotifyFullTrackDto(
     [property: JsonPropertyName("album")] SpotifyAlbumDto? Album);
 
 public record SpotifyImageDto([property: JsonPropertyName("url")] string Url);
+
+public record SpotifyPlaylistDto([property: JsonPropertyName("id")] string Id);

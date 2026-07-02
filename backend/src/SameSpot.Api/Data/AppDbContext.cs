@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TopTrack> TopTracks => Set<TopTrack>();
     public DbSet<MusicItem> MusicItems => Set<MusicItem>();
     public DbSet<Note> Notes => Set<Note>();
+    public DbSet<Discovery> Discoveries => Set<Discovery>();
     public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -94,6 +95,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Note>()
             .Property(n => n.VibeLabel)
             .HasMaxLength(40);
+
+        // Una canción solo se descubre una vez por usuario
+        modelBuilder.Entity<Discovery>()
+            .HasIndex(d => new { d.UserId, d.MusicItemId })
+            .IsUnique();
+
+        modelBuilder.Entity<Discovery>()
+            .HasOne(d => d.User)
+            .WithMany()
+            .HasForeignKey(d => d.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Discovery>()
+            .HasOne(d => d.Author)
+            .WithMany()
+            .HasForeignKey(d => d.AuthorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Discovery>()
+            .HasOne(d => d.MusicItem)
+            .WithMany()
+            .HasForeignKey(d => d.MusicItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Si se borra la nota, el descubrimiento sobrevive sin ella
+        modelBuilder.Entity<Discovery>()
+            .HasOne(d => d.Note)
+            .WithMany()
+            .HasForeignKey(d => d.NoteId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Sender)

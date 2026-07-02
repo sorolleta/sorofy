@@ -23,6 +23,41 @@ namespace SameSpot.Api.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SameSpot.Api.Models.Discovery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MusicItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("NoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("MusicItemId");
+
+                    b.HasIndex("NoteId");
+
+                    b.HasIndex("UserId", "MusicItemId")
+                        .IsUnique();
+
+                    b.ToTable("Discoveries");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Follow", b =>
                 {
                     b.Property<Guid>("FollowerId")
@@ -258,6 +293,9 @@ namespace SameSpot.Api.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DiscoveriesPlaylistId")
+                        .HasColumnType("text");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -272,6 +310,40 @@ namespace SameSpot.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Discovery", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.MusicItem", "MusicItem")
+                        .WithMany()
+                        .HasForeignKey("MusicItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.Note", "Note")
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("MusicItem");
+
+                    b.Navigation("Note");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.Follow", b =>
