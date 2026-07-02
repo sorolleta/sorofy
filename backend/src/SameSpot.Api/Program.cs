@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SameSpot.Api.Config;
 using SameSpot.Api.Data;
+using SameSpot.Api.Hubs;
 using SameSpot.Api.Options;
 using SameSpot.Api.Repositories;
 using SameSpot.Api.Services;
@@ -34,6 +35,7 @@ builder.Services.AddScoped<ISpotifyTokenRepository, SpotifyTokenRepository>();
 builder.Services.AddScoped<ITopItemsRepository, TopItemsRepository>();
 builder.Services.AddScoped<IFollowRepository, FollowRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddScoped<FeedService>();
 builder.Services.AddSingleton<MusicAffinityCalculator>();
@@ -57,6 +59,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["JWT_SECRET"] ?? "")),
         };
+
+        // Los WebSockets del chat no pueden mandar el header Authorization:
+        // SignalR manda el JWT en la query string y lo recogemos aquí
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
+        };
     });
 
 // El frontend (Vite) corre en otro origen durante el desarrollo
@@ -69,6 +87,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -86,5 +105,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TopArtist> TopArtists => Set<TopArtist>();
     public DbSet<TopTrack> TopTracks => Set<TopTrack>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,5 +65,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Review>()
             .Property(r => r.Text)
             .HasMaxLength(2000);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Sender)
+            .WithMany()
+            .HasForeignKey(m => m.SenderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Recipient)
+            .WithMany()
+            .HasForeignKey(m => m.RecipientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Message>()
+            .Property(m => m.Text)
+            .HasMaxLength(1000);
+
+        // Una conversación se consulta en ambos sentidos
+        modelBuilder.Entity<Message>()
+            .HasIndex(m => new { m.SenderId, m.RecipientId, m.SentAt });
+
+        modelBuilder.Entity<Message>()
+            .HasIndex(m => new { m.RecipientId, m.SenderId, m.SentAt });
     }
 }

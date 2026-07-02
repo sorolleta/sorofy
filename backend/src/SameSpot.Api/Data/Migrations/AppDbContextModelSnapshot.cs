@@ -41,6 +41,37 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("Follows");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.Message", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId", "SenderId", "SentAt");
+
+                    b.HasIndex("SenderId", "RecipientId", "SentAt");
+
+                    b.ToTable("Messages");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Review", b =>
                 {
                     b.Property<Guid>("Id")
@@ -227,6 +258,25 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("Follower");
 
                     b.Navigation("Following");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Message", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipient");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.Review", b =>
