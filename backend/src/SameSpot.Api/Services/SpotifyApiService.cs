@@ -31,6 +31,42 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
             userId, "https://api.spotify.com/v1/me/player/currently-playing");
     }
 
+    // Búsqueda de álbumes y canciones para reseñar
+    public async Task<SpotifySearchDto?> SearchAsync(Guid userId, string query)
+    {
+        return await GetAsync<SpotifySearchDto>(
+            userId, $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=album,track&limit=10");
+    }
+
+    // Álbum y canción individuales: se usan al crear una reseña para validar
+    // el id y guardar los metadatos canónicos (no nos fiamos de los del cliente)
+    public async Task<SpotifyAlbumDto?> GetAlbumAsync(Guid userId, string albumId)
+    {
+        return await GetItemOrNullAsync<SpotifyAlbumDto>(
+            userId, $"https://api.spotify.com/v1/albums/{Uri.EscapeDataString(albumId)}");
+    }
+
+    public async Task<SpotifyFullTrackDto?> GetTrackAsync(Guid userId, string trackId)
+    {
+        return await GetItemOrNullAsync<SpotifyFullTrackDto>(
+            userId, $"https://api.spotify.com/v1/tracks/{Uri.EscapeDataString(trackId)}");
+    }
+
+    // Spotify responde 404 si el id no existe y 400 si ni siquiera tiene
+    // formato de id: para nosotros ambos significan "no existe"
+    private async Task<T?> GetItemOrNullAsync<T>(Guid userId, string url) where T : class
+    {
+        try
+        {
+            return await GetAsync<T>(userId, url);
+        }
+        catch (HttpRequestException e) when (
+            e.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+        {
+            return null;
+        }
+    }
+
     private async Task<T?> GetAsync<T>(Guid userId, string url) where T : class
     {
         var accessToken = await tokenService.GetValidAccessTokenAsync(userId);
@@ -66,3 +102,22 @@ public record SpotifyArtistBriefDto([property: JsonPropertyName("name")] string 
 public record SpotifyNowPlayingDto(
     [property: JsonPropertyName("is_playing")] bool IsPlaying,
     [property: JsonPropertyName("item")] SpotifyTrackDto? Item);
+
+public record SpotifySearchDto(
+    [property: JsonPropertyName("albums")] SpotifyPage<SpotifyAlbumDto>? Albums,
+    [property: JsonPropertyName("tracks")] SpotifyPage<SpotifyFullTrackDto>? Tracks);
+
+public record SpotifyAlbumDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("artists")] List<SpotifyArtistBriefDto> Artists,
+    [property: JsonPropertyName("images")] List<SpotifyImageDto>? Images);
+
+// Como SpotifyTrackDto pero con el álbum, del que sacamos la carátula
+public record SpotifyFullTrackDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("artists")] List<SpotifyArtistBriefDto> Artists,
+    [property: JsonPropertyName("album")] SpotifyAlbumDto? Album);
+
+public record SpotifyImageDto([property: JsonPropertyName("url")] string Url);

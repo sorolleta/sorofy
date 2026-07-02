@@ -14,8 +14,19 @@ public class UsersController(
     IUserRepository users,
     IFollowRepository follows,
     ITopItemsRepository tops,
+    IReviewRepository reviews,
     AffinityService affinity) : ControllerBase
 {
+    // Reseñas de un usuario, para verlas en su perfil público
+    [HttpGet("{id:guid}/reviews")]
+    public async Task<IActionResult> GetReviews(Guid id)
+    {
+        if (await users.GetByIdAsync(id) is null) return NotFound();
+
+        var userReviews = await reviews.GetByUserAsync(id);
+        return Ok(userReviews.Select(ReviewsController.ToResponse));
+    }
+
     // % de afinidad musical entre el usuario autenticado y otro usuario
     [HttpGet("{id:guid}/affinity")]
     public async Task<IActionResult> GetAffinity(Guid id)

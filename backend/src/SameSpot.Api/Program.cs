@@ -33,6 +33,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISpotifyTokenRepository, SpotifyTokenRepository>();
 builder.Services.AddScoped<ITopItemsRepository, TopItemsRepository>();
 builder.Services.AddScoped<IFollowRepository, FollowRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddScoped<FeedService>();
 builder.Services.AddSingleton<MusicAffinityCalculator>();

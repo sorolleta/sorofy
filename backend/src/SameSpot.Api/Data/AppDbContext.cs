@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Follow> Follows => Set<Follow>();
     public DbSet<TopArtist> TopArtists => Set<TopArtist>();
     public DbSet<TopTrack> TopTracks => Set<TopTrack>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,5 +49,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<TopTrack>()
             .HasIndex(t => new { t.UserId, t.Rank });
+
+        // Una reseña por usuario y elemento: si quieres cambiarla, la editas
+        modelBuilder.Entity<Review>()
+            .HasIndex(r => new { r.UserId, r.ItemType, r.SpotifyItemId })
+            .IsUnique();
+
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Review>()
+            .Property(r => r.Text)
+            .HasMaxLength(2000);
     }
 }
