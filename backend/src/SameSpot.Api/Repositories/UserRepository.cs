@@ -13,6 +13,11 @@ public class UserRepository(AppDbContext db) : IUserRepository
         db.Users.Include(u => u.SpotifyToken)
             .FirstOrDefaultAsync(u => u.SpotifyId == spotifyId);
 
+    public Task<List<User>> GetAllExceptAsync(Guid userId) =>
+        db.Users.Where(u => u.Id != userId)
+            .OrderBy(u => u.DisplayName)
+            .ToListAsync();
+
     public async Task AddAsync(User user) => await db.Users.AddAsync(user);
 
     public Task SaveChangesAsync() => db.SaveChangesAsync();

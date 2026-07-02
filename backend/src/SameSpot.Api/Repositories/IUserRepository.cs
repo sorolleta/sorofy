@@ -6,6 +6,7 @@ public interface IUserRepository
 {
     Task<User?> GetByIdAsync(Guid id);
     Task<User?> GetBySpotifyIdAsync(string spotifyId);
+    Task<List<User>> GetAllExceptAsync(Guid userId);
     Task AddAsync(User user);
     Task SaveChangesAsync();
 }
