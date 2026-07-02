@@ -10,7 +10,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Follow> Follows => Set<Follow>();
     public DbSet<TopArtist> TopArtists => Set<TopArtist>();
     public DbSet<TopTrack> TopTracks => Set<TopTrack>();
-    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<MusicItem> MusicItems => Set<MusicItem>();
+    public DbSet<Note> Notes => Set<Note>();
     public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -51,20 +52,48 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<TopTrack>()
             .HasIndex(t => new { t.UserId, t.Rank });
 
-        // Una reseña por usuario y elemento: si quieres cambiarla, la editas
-        modelBuilder.Entity<Review>()
-            .HasIndex(r => new { r.UserId, r.ItemType, r.SpotifyItemId })
-            .IsUnique();
+        // Un item de Spotify existe una sola vez en la tabla; los grupos
+        // locales (SpotifyId null) quedan fuera del índice
+        modelBuilder.Entity<MusicItem>()
+            .HasIndex(i => new { i.Type, i.SpotifyId })
+            .IsUnique()
+            .HasFilter("\"SpotifyId\" IS NOT NULL");
 
-        modelBuilder.Entity<Review>()
-            .HasOne(r => r.User)
+        modelBuilder.Entity<MusicItem>()
+            .Property(i => i.Description)
+            .HasMaxLength(500);
+
+        // La bitácora de un usuario se lee en orden cronológico
+        modelBuilder.Entity<Note>()
+            .HasIndex(n => new { n.UserId, n.CreatedAt });
+
+        modelBuilder.Entity<Note>()
+            .HasOne(n => n.User)
             .WithMany()
-            .HasForeignKey(r => r.UserId)
+            .HasForeignKey(n => n.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Review>()
-            .Property(r => r.Text)
+        modelBuilder.Entity<Note>()
+            .HasOne(n => n.MusicItem)
+            .WithMany()
+            .HasForeignKey(n => n.MusicItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Note>()
+            .Property(n => n.Text)
             .HasMaxLength(2000);
+
+        modelBuilder.Entity<Note>()
+            .Property(n => n.VibeColor)
+            .HasMaxLength(9);
+
+        modelBuilder.Entity<Note>()
+            .Property(n => n.VibeEmoji)
+            .HasMaxLength(16);
+
+        modelBuilder.Entity<Note>()
+            .Property(n => n.VibeLabel)
+            .HasMaxLength(40);
 
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Sender)

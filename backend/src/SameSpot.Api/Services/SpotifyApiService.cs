@@ -31,15 +31,15 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
             userId, "https://api.spotify.com/v1/me/player/currently-playing");
     }
 
-    // Búsqueda de álbumes y canciones para reseñar
+    // Búsqueda de álbumes, canciones y artistas para escribir notas sobre ellos
     public async Task<SpotifySearchDto?> SearchAsync(Guid userId, string query)
     {
         return await GetAsync<SpotifySearchDto>(
-            userId, $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=album,track&limit=10");
+            userId, $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=album,track,artist&limit=10");
     }
 
-    // Álbum y canción individuales: se usan al crear una reseña para validar
-    // el id y guardar los metadatos canónicos (no nos fiamos de los del cliente)
+    // Elementos individuales: se usan al crear una nota para validar el id y
+    // guardar los metadatos canónicos (no nos fiamos de los del cliente)
     public async Task<SpotifyAlbumDto?> GetAlbumAsync(Guid userId, string albumId)
     {
         return await GetItemOrNullAsync<SpotifyAlbumDto>(
@@ -50,6 +50,12 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
     {
         return await GetItemOrNullAsync<SpotifyFullTrackDto>(
             userId, $"https://api.spotify.com/v1/tracks/{Uri.EscapeDataString(trackId)}");
+    }
+
+    public async Task<SpotifyFullArtistDto?> GetArtistAsync(Guid userId, string artistId)
+    {
+        return await GetItemOrNullAsync<SpotifyFullArtistDto>(
+            userId, $"https://api.spotify.com/v1/artists/{Uri.EscapeDataString(artistId)}");
     }
 
     // Spotify responde 404 si el id no existe y 400 si ni siquiera tiene
@@ -105,7 +111,14 @@ public record SpotifyNowPlayingDto(
 
 public record SpotifySearchDto(
     [property: JsonPropertyName("albums")] SpotifyPage<SpotifyAlbumDto>? Albums,
-    [property: JsonPropertyName("tracks")] SpotifyPage<SpotifyFullTrackDto>? Tracks);
+    [property: JsonPropertyName("tracks")] SpotifyPage<SpotifyFullTrackDto>? Tracks,
+    [property: JsonPropertyName("artists")] SpotifyPage<SpotifyFullArtistDto>? Artists);
+
+// Como SpotifyArtistDto pero con las imágenes, de donde sacamos la foto
+public record SpotifyFullArtistDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("images")] List<SpotifyImageDto>? Images);
 
 public record SpotifyAlbumDto(
     [property: JsonPropertyName("id")] string Id,

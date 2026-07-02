@@ -72,35 +72,55 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("Messages");
                 });
 
-            modelBuilder.Entity("SameSpot.Api.Models.Review", b =>
+            modelBuilder.Entity("SameSpot.Api.Models.MusicItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("ArtistName")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
-                    b.Property<string>("ItemName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("ItemType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("RatingHalfStars")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SpotifyItemId")
-                        .IsRequired()
+                    b.Property<string>("SpotifyId")
                         .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type", "SpotifyId")
+                        .IsUnique()
+                        .HasFilter("\"SpotifyId\" IS NOT NULL");
+
+                    b.ToTable("MusicItems");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Note", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MusicItemId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Text")
                         .HasMaxLength(2000)
@@ -112,12 +132,25 @@ namespace SameSpot.Api.Data.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("VibeColor")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<string>("VibeEmoji")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("VibeLabel")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "ItemType", "SpotifyItemId")
-                        .IsUnique();
+                    b.HasIndex("MusicItemId");
 
-                    b.ToTable("Reviews");
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("Notes");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.SpotifyToken", b =>
@@ -279,13 +312,21 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("SameSpot.Api.Models.Review", b =>
+            modelBuilder.Entity("SameSpot.Api.Models.Note", b =>
                 {
+                    b.HasOne("SameSpot.Api.Models.MusicItem", "MusicItem")
+                        .WithMany()
+                        .HasForeignKey("MusicItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("SameSpot.Api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("MusicItem");
 
                     b.Navigation("User");
                 });

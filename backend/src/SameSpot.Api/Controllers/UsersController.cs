@@ -14,17 +14,17 @@ public class UsersController(
     IUserRepository users,
     IFollowRepository follows,
     ITopItemsRepository tops,
-    IReviewRepository reviews,
+    INoteRepository notes,
     AffinityService affinity) : ControllerBase
 {
-    // Reseñas de un usuario, para verlas en su perfil público
-    [HttpGet("{id:guid}/reviews")]
-    public async Task<IActionResult> GetReviews(Guid id)
+    // La bitácora de un usuario: sus notas, para verlas en su perfil público
+    [HttpGet("{id:guid}/notes")]
+    public async Task<IActionResult> GetNotes(Guid id)
     {
         if (await users.GetByIdAsync(id) is null) return NotFound();
 
-        var userReviews = await reviews.GetByUserAsync(id);
-        return Ok(userReviews.Select(ReviewsController.ToResponse));
+        var userNotes = await notes.GetByUserAsync(id);
+        return Ok(userNotes.Select(NotesController.ToResponse));
     }
 
     // % de afinidad musical entre el usuario autenticado y otro usuario

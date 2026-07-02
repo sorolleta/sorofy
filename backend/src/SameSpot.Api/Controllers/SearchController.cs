@@ -10,7 +10,8 @@ namespace SameSpot.Api.Controllers;
 [Route("api/search")]
 public class SearchController(SpotifyApiService spotify) : ControllerBase
 {
-    // Busca álbumes y canciones en Spotify (para elegir qué reseñar)
+    // Busca álbumes, canciones y artistas en Spotify (para elegir sobre qué
+    // escribir una nota)
     [HttpGet]
     public async Task<IActionResult> Search([FromQuery] string? q)
     {
@@ -36,6 +37,12 @@ public class SearchController(SpotifyApiService spotify) : ControllerBase
                 t.Name,
                 ArtistName = string.Join(", ", t.Artists.Select(x => x.Name)),
                 ImageUrl = t.Album?.Images?.FirstOrDefault()?.Url,
+            }),
+            Artists = (result?.Artists?.Items ?? []).Select(a => new
+            {
+                a.Id,
+                a.Name,
+                ImageUrl = a.Images?.FirstOrDefault()?.Url,
             }),
         });
     }
