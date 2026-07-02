@@ -41,6 +41,27 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("Follows");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.SpotifyToken", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("SpotifyTokens");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.TopArtist", b =>
                 {
                     b.Property<long>("Id")
@@ -160,6 +181,17 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("Following");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.SpotifyToken", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithOne("SpotifyToken")
+                        .HasForeignKey("SameSpot.Api.Models.SpotifyToken", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.TopArtist", b =>
                 {
                     b.HasOne("SameSpot.Api.Models.User", "User")
@@ -187,6 +219,8 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("Followers");
 
                     b.Navigation("Following");
+
+                    b.Navigation("SpotifyToken");
 
                     b.Navigation("TopArtists");
 

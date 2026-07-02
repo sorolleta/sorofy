@@ -6,6 +6,7 @@ namespace SameSpot.Api.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<SpotifyToken> SpotifyTokens => Set<SpotifyToken>();
     public DbSet<Follow> Follows => Set<Follow>();
     public DbSet<TopArtist> TopArtists => Set<TopArtist>();
     public DbSet<TopTrack> TopTracks => Set<TopTrack>();
@@ -15,6 +16,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<User>()
             .HasIndex(u => u.SpotifyId)
             .IsUnique();
+
+        modelBuilder.Entity<SpotifyToken>()
+            .HasKey(t => t.UserId);
+
+        modelBuilder.Entity<SpotifyToken>()
+            .HasOne(t => t.User)
+            .WithOne(u => u.SpotifyToken)
+            .HasForeignKey<SpotifyToken>(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Un follow es único por pareja (seguidor, seguido): clave compuesta
         modelBuilder.Entity<Follow>()

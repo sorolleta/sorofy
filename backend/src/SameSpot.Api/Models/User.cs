@@ -8,6 +8,8 @@ public class User
     public string? AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public SpotifyToken? SpotifyToken { get; set; }
+
     public List<TopArtist> TopArtists { get; set; } = [];
     public List<TopTrack> TopTracks { get; set; } = [];
 
