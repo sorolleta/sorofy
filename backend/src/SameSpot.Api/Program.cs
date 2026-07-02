@@ -31,9 +31,13 @@ builder.Services.Configure<JwtOptions>(o =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISpotifyTokenRepository, SpotifyTokenRepository>();
+builder.Services.AddScoped<ITopItemsRepository, TopItemsRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddTransient<SpotifyRateLimitHandler>();
 builder.Services.AddHttpClient<SpotifyAuthService>();
+builder.Services.AddHttpClient<SpotifyApiService>()
+    .AddHttpMessageHandler<SpotifyRateLimitHandler>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
