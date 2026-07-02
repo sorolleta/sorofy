@@ -13,7 +13,8 @@ namespace SameSpot.Api.Controllers;
 public class AuthController(
     SpotifyAuthService spotifyAuth,
     JwtService jwt,
-    IUserRepository users) : ControllerBase
+    IUserRepository users,
+    IConfiguration config) : ControllerBase
 {
     private const string StateCookie = "spotify_auth_state";
 
@@ -86,9 +87,19 @@ public class AuthController(
         }
         await users.SaveChangesAsync();
 
+        var token = jwt.CreateToken(user);
+
+        // Con frontend configurado, se le redirige con el token en el fragment
+        // (#token=...): el fragment nunca viaja al servidor ni acaba en logs.
+        var frontendUrl = config["FRONTEND_URL"];
+        if (!string.IsNullOrEmpty(frontendUrl))
+        {
+            return Redirect($"{frontendUrl}/auth/callback#token={token}");
+        }
+
         return Ok(new
         {
-            token = jwt.CreateToken(user),
+            token,
             user = new { user.Id, user.SpotifyId, user.DisplayName, user.AvatarUrl },
         });
     }
