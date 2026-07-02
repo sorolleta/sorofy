@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SameSpot.Api.Extensions;
 using SameSpot.Api.Models;
 using SameSpot.Api.Repositories;
+using SameSpot.Api.Services;
 
 namespace SameSpot.Api.Controllers;
 
@@ -12,8 +13,23 @@ namespace SameSpot.Api.Controllers;
 public class UsersController(
     IUserRepository users,
     IFollowRepository follows,
-    ITopItemsRepository tops) : ControllerBase
+    ITopItemsRepository tops,
+    AffinityService affinity) : ControllerBase
 {
+    // % de afinidad musical entre el usuario autenticado y otro usuario
+    [HttpGet("{id:guid}/affinity")]
+    public async Task<IActionResult> GetAffinity(Guid id)
+    {
+        var myId = User.GetUserId();
+        if (id == myId)
+        {
+            return BadRequest(new { message = "La afinidad se calcula con otro usuario." });
+        }
+        if (await users.GetByIdAsync(id) is null) return NotFound();
+
+        return Ok(await affinity.GetAffinityAsync(myId, id));
+    }
+
     // Listado de usuarios para descubrir a quién seguir (en el MVP cabemos
     // 5 personas por app de Spotify, así que no hace falta paginar ni buscar)
     [HttpGet]

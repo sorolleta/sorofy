@@ -35,6 +35,8 @@ builder.Services.AddScoped<ITopItemsRepository, TopItemsRepository>();
 builder.Services.AddScoped<IFollowRepository, FollowRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddScoped<FeedService>();
+builder.Services.AddSingleton<MusicAffinityCalculator>();
+builder.Services.AddScoped<AffinityService>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddTransient<SpotifyRateLimitHandler>();
 builder.Services.AddHttpClient<SpotifyAuthService>();
