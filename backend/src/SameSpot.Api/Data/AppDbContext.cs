@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<Discovery> Discoveries => Set<Discovery>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<Tag> Tags => Set<Tag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -148,5 +149,42 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<Message>()
             .HasIndex(m => new { m.RecipientId, m.SenderId, m.SentAt });
+
+        modelBuilder.Entity<Tag>()
+            .Property(t => t.Name)
+            .HasMaxLength(40);
+
+        modelBuilder.Entity<Tag>()
+            .HasIndex(t => t.Name)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .Property(u => u.Province)
+            .HasMaxLength(30);
+
+        // N:N usuario-tag; EF genera la tabla intermedia UserTags
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.Tags)
+            .WithMany()
+            .UsingEntity("UserTags");
+
+        // Catálogo inicial de tags estéticos (ids fijos para el seed)
+        modelBuilder.Entity<Tag>().HasData(
+            new Tag { Id = 1, Name = "Jazz nocturno" },
+            new Tag { Id = 2, Name = "Post-punk" },
+            new Tag { Id = 3, Name = "Charanga y fiesta" },
+            new Tag { Id = 4, Name = "Indie de carretera" },
+            new Tag { Id = 5, Name = "Cantautor e íntimo" },
+            new Tag { Id = 6, Name = "Electrónica de baile" },
+            new Tag { Id = 7, Name = "Ambient y calma" },
+            new Tag { Id = 8, Name = "Flamenco y raíz" },
+            new Tag { Id = 9, Name = "Hip-hop y rap" },
+            new Tag { Id = 10, Name = "Rock clásico" },
+            new Tag { Id = 11, Name = "Metal y ruido" },
+            new Tag { Id = 12, Name = "Pop luminoso" },
+            new Tag { Id = 13, Name = "Soul y funk" },
+            new Tag { Id = 14, Name = "Clásica y bandas sonoras" },
+            new Tag { Id = 15, Name = "Reggaetón y perreo" },
+            new Tag { Id = 16, Name = "Folk y acústico" });
     }
 }

@@ -39,6 +39,7 @@ builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<IDiscoveryRepository, DiscoveryRepository>();
 builder.Services.AddScoped<DiscoveryService>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddScoped<FeedService>();
 builder.Services.AddSingleton<FeedRanker>();

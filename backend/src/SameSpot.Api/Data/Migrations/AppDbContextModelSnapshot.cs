@@ -209,6 +209,109 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("SpotifyTokens");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.Tag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Tags");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Jazz nocturno"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Post-punk"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Charanga y fiesta"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Indie de carretera"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Cantautor e íntimo"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Name = "Electrónica de baile"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Name = "Ambient y calma"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Name = "Flamenco y raíz"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Name = "Hip-hop y rap"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Name = "Rock clásico"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Name = "Metal y ruido"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Name = "Pop luminoso"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Name = "Soul y funk"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Name = "Clásica y bandas sonoras"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Name = "Reggaetón y perreo"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Name = "Folk y acústico"
+                        });
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.TopArtist", b =>
                 {
                     b.Property<long>("Id")
@@ -300,6 +403,13 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("OnboardingCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Province")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("SpotifyId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -310,6 +420,21 @@ namespace SameSpot.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("UserTags", b =>
+                {
+                    b.Property<int>("TagsId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TagsId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserTags");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.Discovery", b =>
@@ -434,6 +559,21 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserTags", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.User", b =>

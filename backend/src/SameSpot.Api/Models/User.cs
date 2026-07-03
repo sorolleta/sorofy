@@ -12,6 +12,12 @@ public class User
     // la primera vez que guarda una canción
     public string? DiscoveriesPlaylistId { get; set; }
 
+    // Rellenados en el onboarding obligatorio del primer login: la provincia
+    // alimentará la proximidad local y los tags el mapeo con perfiles afines
+    public string? Province { get; set; }
+    public DateTime? OnboardingCompletedAt { get; set; }
+    public List<Tag> Tags { get; set; } = [];
+
     public SpotifyToken? SpotifyToken { get; set; }
 
     public List<TopArtist> TopArtists { get; set; } = [];

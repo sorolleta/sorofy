@@ -9,6 +9,10 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(Guid id) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id);
 
+    public Task<User?> GetByIdWithTagsAsync(Guid id) =>
+        db.Users.Include(u => u.Tags)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
     public Task<User?> GetBySpotifyIdAsync(string spotifyId) =>
         db.Users.Include(u => u.SpotifyToken)
             .FirstOrDefaultAsync(u => u.SpotifyId == spotifyId);

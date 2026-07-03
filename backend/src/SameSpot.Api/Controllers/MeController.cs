@@ -20,7 +20,7 @@ public class MeController(
     public async Task<IActionResult> GetProfile()
     {
         var userId = User.GetUserId();
-        var user = await users.GetByIdAsync(userId);
+        var user = await users.GetByIdWithTagsAsync(userId);
         if (user is null) return NotFound();
 
         var topArtists = await tops.GetTopArtistsAsync(userId);
@@ -32,6 +32,9 @@ public class MeController(
             user.SpotifyId,
             user.DisplayName,
             user.AvatarUrl,
+            user.Province,
+            Tags = user.Tags.Select(t => t.Name),
+            NeedsOnboarding = user.OnboardingCompletedAt is null,
             TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank }),
             TopTracks = topTracks.Select(t => new { t.SpotifyTrackId, t.Name, t.ArtistName, t.Rank }),
             LastSync = topArtists.FirstOrDefault()?.FetchedAt,
