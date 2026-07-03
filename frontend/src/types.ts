@@ -36,6 +36,7 @@ export interface UserProfile {
   followers: number;
   following: number;
   isFollowedByMe: boolean;
+  trustCount: number;
   topArtists: TopArtist[];
   topTracks: TopTrack[];
 }

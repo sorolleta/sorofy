@@ -15,6 +15,7 @@ public class UsersController(
     IFollowRepository follows,
     ITopItemsRepository tops,
     INoteRepository notes,
+    IDiscoveryRepository discoveries,
     AffinityService affinity) : ControllerBase
 {
     // La bitácora de un usuario: sus notas, para verlas en su perfil público
@@ -79,6 +80,9 @@ public class UsersController(
             Followers = await follows.CountFollowersAsync(id),
             Following = await follows.CountFollowingAsync(id),
             IsFollowedByMe = await follows.ExistsAsync(User.GetUserId(), id),
+            // El contador de confianza privado del manifiesto: cuántas
+            // canciones guardé gracias a las notas de esta persona
+            TrustCount = await discoveries.CountByAuthorAsync(User.GetUserId(), id),
             TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank }),
             TopTracks = topTracks.Select(t => new { t.SpotifyTrackId, t.Name, t.ArtistName, t.Rank }),
         });

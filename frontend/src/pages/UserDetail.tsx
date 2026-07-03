@@ -51,10 +51,16 @@ export default function UserDetail() {
             </Link>
           </div>
         </div>
-        {affinity && (
+        {/* El contador de confianza sustituye al % de afinidad en el UI:
+            la afinidad sigue viva como señal interna del feed */}
+        {profile.trustCount > 0 && (
           <div className="affinity">
-            <span className="affinity-score">{affinity.score}%</span>
-            <span className="muted">afinidad musical</span>
+            <span className="affinity-score">{profile.trustCount}</span>
+            <span className="muted">
+              {profile.trustCount === 1 ? "canción guardada" : "canciones guardadas"}
+              <br />
+              gracias a sus notas
+            </span>
           </div>
         )}
       </header>
