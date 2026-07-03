@@ -5,7 +5,7 @@ using SameSpot.Api.Repositories;
 namespace SameSpot.Api.Services;
 
 // El puente con Spotify: guardar una canción descubierta en el feed la mete
-// en la playlist "Mis Descubrimientos de SameSpot" del usuario (privada, se
+// en la playlist "Mis Descubrimientos de Sorofy" del usuario (privada, se
 // crea la primera vez) y deja registro de a quién se lo debe.
 public class DiscoveryService(
     IDiscoveryRepository discoveries,
@@ -13,9 +13,9 @@ public class DiscoveryService(
     IUserRepository users,
     SpotifyApiService spotify)
 {
-    private const string PlaylistName = "Mis Descubrimientos de SameSpot";
+    private const string PlaylistName = "Mis Descubrimientos de Sorofy";
     private const string PlaylistDescription =
-        "Música que descubrí gracias a la gente de SameSpot.";
+        "Música que descubrí gracias a la gente de Sorofy.";
 
     public record SaveResult(Discovery? Discovery, string? Error);
 

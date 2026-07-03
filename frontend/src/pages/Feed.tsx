@@ -27,7 +27,7 @@ export default function Feed() {
     return () => clearInterval(interval);
   }, []);
 
-  // Guardar = a la playlist "Mis Descubrimientos de SameSpot" de tu Spotify
+  // Guardar = a la playlist "Mis Descubrimientos de Sorofy" de tu Spotify
   const save = async (entry: FeedEntry) => {
     setError("");
     try {

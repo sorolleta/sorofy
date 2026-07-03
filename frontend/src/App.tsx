@@ -13,7 +13,7 @@ function Login() {
   if (getToken()) return <Navigate to="/perfil" replace />;
   return (
     <div className="login">
-      <h1>SameSpot</h1>
+      <h1>Sorofy</h1>
       <p>Mismo punto, misma música. Descubre gente que escucha lo que tú.</p>
       <a className="btn btn-spotify" href={loginUrl()}>
         Entrar con Spotify
@@ -34,7 +34,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <nav className="nav">
-        <span className="nav-brand">SameSpot</span>
+        <span className="nav-brand">Sorofy</span>
         <Link to="/perfil">Mi perfil</Link>
         <Link to="/gente">Gente</Link>
         <Link to="/feed">Feed</Link>
