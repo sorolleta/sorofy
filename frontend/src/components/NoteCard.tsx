@@ -6,6 +6,8 @@ interface Props {
   // El feed muestra quién escribió la nota; la bitácora no lo necesita
   author?: NoteAuthor;
   actions?: React.ReactNode;
+  // Si la nota llegó por su ancla, el artista del lector que la trajo
+  because?: string | null;
 }
 
 const TYPE_LABEL: Record<MusicItem["type"], string> = {
@@ -17,7 +19,7 @@ const TYPE_LABEL: Record<MusicItem["type"], string> = {
 
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño: esto es contexto, no un tablón de reseñas
-export default function NoteCard({ note, author, actions }: Props) {
+export default function NoteCard({ note, author, actions, because }: Props) {
   return (
     <li className="note-card">
       {author && (
@@ -61,6 +63,15 @@ export default function NoteCard({ note, author, actions }: Props) {
                 {note.vibeLabel}
               </span>
             </p>
+          )}
+          {/* La recomendación se explica: personalizada si el ancla coincide
+              con tus artistas, genérica si no */}
+          {because ? (
+            <p className="note-because">Te llega porque escuchas {because}</p>
+          ) : (
+            note.anchorArtistName && (
+              <p className="note-anchor muted">Si te gusta {note.anchorArtistName}</p>
+            )
           )}
           <p className="note-item muted">
             {note.item.name}

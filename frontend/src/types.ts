@@ -60,10 +60,12 @@ export interface NoteAuthor {
   avatarUrl: string | null;
 }
 
-// Una tarjeta del feed de descubrimiento: la nota y quién la escribió
+// Una tarjeta del feed de descubrimiento: la nota, quién la escribió y,
+// si llegó por su ancla, el artista tuyo que la trajo
 export interface FeedEntry {
   author: NoteAuthor;
   note: Note;
+  becauseArtist: string | null;
 }
 
 export interface Affinity {
@@ -130,6 +132,9 @@ export interface Note {
   vibeColor: string | null;
   vibeEmoji: string | null;
   vibeLabel: string | null;
+  // El ancla de recomendación: "si te gusta X, esto te puede gustar"
+  anchorArtistSpotifyId: string | null;
+  anchorArtistName: string | null;
   createdAt: string;
   updatedAt: string | null;
 }

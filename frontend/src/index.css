@@ -345,6 +345,32 @@ h1 {
   font-size: 0.75rem;
 }
 
+/* La explicación de la recomendación: personal si coincide contigo */
+.note-because {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.note-anchor {
+  font-size: 0.85rem;
+}
+
+/* ---- Ancla de recomendación (formulario) ---- */
+.anchor-picker {
+  margin-top: 0.8rem;
+}
+
+.anchor-picker p {
+  margin: 0.3rem 0;
+}
+
+.anchor-search {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
 .note-actions {
   display: flex;
   flex-direction: column;

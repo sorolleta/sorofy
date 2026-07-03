@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { LocalGroup, Note, SearchResponse } from "../types";
+import type { LocalGroup, Note, SearchArtist, SearchResponse } from "../types";
 import NoteList from "../components/NoteList";
 
 // Lo que hace falta para abrir el formulario: un item de Spotify, un grupo
@@ -29,6 +29,11 @@ export default function Notes() {
   const [vibeColor, setVibeColor] = useState<string | null>(null);
   const [vibeEmoji, setVibeEmoji] = useState<string | null>(null);
   const [vibeLabel, setVibeLabel] = useState("");
+  // El ancla "si te gusta X": convierte la nota en recomendación dirigida
+  const [anchor, setAnchor] = useState<{ id: string; name: string } | null>(null);
+  const [anchorQuery, setAnchorQuery] = useState("");
+  const [anchorOptions, setAnchorOptions] = useState<SearchArtist[]>([]);
+  const [anchorSearching, setAnchorSearching] = useState(false);
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -67,6 +72,9 @@ export default function Notes() {
     setVibeColor(null);
     setVibeEmoji(null);
     setVibeLabel("");
+    setAnchor(null);
+    setAnchorQuery("");
+    setAnchorOptions([]);
     setError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -81,6 +89,23 @@ export default function Notes() {
     setVibeColor(note.vibeColor);
     setVibeEmoji(note.vibeEmoji);
     setVibeLabel(note.vibeLabel ?? "");
+    if (note.anchorArtistSpotifyId && note.anchorArtistName) {
+      setAnchor({ id: note.anchorArtistSpotifyId, name: note.anchorArtistName });
+    }
+  };
+
+  const searchAnchor = async () => {
+    if (!anchorQuery.trim()) return;
+    setAnchorSearching(true);
+    try {
+      const q = encodeURIComponent(anchorQuery.trim());
+      const found = await api.get<SearchResponse>(`/api/search?q=${q}`);
+      setAnchorOptions(found.artists.slice(0, 6));
+    } catch {
+      setError("No se pudo buscar el artista ancla");
+    } finally {
+      setAnchorSearching(false);
+    }
   };
 
   const createLocalGroup = async () => {
@@ -104,7 +129,7 @@ export default function Notes() {
     if (!draft) return;
     setSaving(true);
     setError("");
-    const body = { text, vibeColor, vibeEmoji, vibeLabel };
+    const body = { text, vibeColor, vibeEmoji, vibeLabel, anchorArtistId: anchor?.id ?? null };
     try {
       if (draft.noteId) {
         await api.put(`/api/notes/${draft.noteId}`, body);
@@ -191,6 +216,61 @@ export default function Notes() {
               value={vibeLabel}
               onChange={(e) => setVibeLabel(e.target.value)}
             />
+          </div>
+          {/* El ancla convierte la nota en recomendación dirigida: le
+              llegará a quien ya escucha ese artista aunque no te siga */}
+          <div className="anchor-picker">
+            {anchor ? (
+              <p>
+                Si te gusta <strong className="accent">{anchor.name}</strong>{" "}
+                <button className="btn-link" onClick={() => setAnchor(null)}>
+                  Quitar
+                </button>
+              </p>
+            ) : (
+              <>
+                <div className="anchor-search">
+                  <input
+                    type="search"
+                    placeholder='¿Recomendación? Ánclala: "si te gusta…" (opcional)'
+                    value={anchorQuery}
+                    onChange={(e) => setAnchorQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        searchAnchor();
+                      }
+                    }}
+                  />
+                  <button
+                    className="btn btn-sm"
+                    type="button"
+                    onClick={searchAnchor}
+                    disabled={anchorSearching}
+                  >
+                    {anchorSearching ? "Buscando…" : "Buscar"}
+                  </button>
+                </div>
+                {anchorOptions.length > 0 && (
+                  <div className="vibe-row">
+                    {anchorOptions.map((artist) => (
+                      <button
+                        key={artist.id}
+                        type="button"
+                        className="tag-chip"
+                        onClick={() => {
+                          setAnchor({ id: artist.id, name: artist.name });
+                          setAnchorOptions([]);
+                          setAnchorQuery("");
+                        }}
+                      >
+                        {artist.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <div className="note-form-actions">
             <button className="btn" onClick={save} disabled={saving || !canSave}>

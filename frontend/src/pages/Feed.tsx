@@ -84,6 +84,7 @@ export default function Feed() {
               note={entry.note}
               author={entry.author}
               actions={saveAction(entry)}
+              because={entry.becauseArtist}
             />
           ))}
         </ul>
