@@ -11,7 +11,9 @@
 1. Entra en https://developer.spotify.com/dashboard con tu cuenta de Spotify
    **Premium** y acepta los términos de desarrollador si es la primera vez.
 2. Pulsa **Create app** y rellena:
-   - **App name:** `SameSpot`
+   - **App name:** `Sorofy` (registrada originalmente como `SameSpot` y
+     renombrada desde Settings; el nombre solo afecta a la pantalla de
+     consentimiento OAuth)
    - **App description:** Red social musical — comparte lo que escuchas y
      descubre gente con gustos parecidos.
    - **Redirect URIs:** `http://127.0.0.1:5000/api/auth/spotify/callback`

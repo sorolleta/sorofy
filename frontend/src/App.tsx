@@ -10,11 +10,11 @@ import Chats from "./pages/Chats";
 import ChatThread from "./pages/ChatThread";
 
 function Login() {
-  if (getToken()) return <Navigate to="/perfil" replace />;
+  if (getToken()) return <Navigate to="/feed" replace />;
   return (
     <div className="login">
       <h1>Sorofy</h1>
-      <p>Mismo punto, misma música. Descubre gente que escucha lo que tú.</p>
+      <p>Música contada por personas, no por algoritmos. Descubre a tu ritmo.</p>
       <a className="btn btn-spotify" href={loginUrl()}>
         Entrar con Spotify
       </a>
@@ -35,11 +35,11 @@ function Layout({ children }: { children: React.ReactNode }) {
     <>
       <nav className="nav">
         <span className="nav-brand">Sorofy</span>
-        <Link to="/perfil">Mi perfil</Link>
-        <Link to="/gente">Gente</Link>
         <Link to="/feed">Feed</Link>
         <Link to="/notas">Notas</Link>
+        <Link to="/gente">Gente</Link>
         <Link to="/chats">Chats</Link>
+        <Link to="/perfil">Mi perfil</Link>
         <button className="btn-link" onClick={logout}>
           Salir
         </button>

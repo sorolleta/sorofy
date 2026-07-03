@@ -12,7 +12,7 @@ export default function AuthCallback() {
       setToken(token);
       // Limpiar el token de la URL antes de seguir
       window.history.replaceState(null, "", "/auth/callback");
-      navigate("/perfil", { replace: true });
+      navigate("/feed", { replace: true });
     } else {
       navigate("/", { replace: true });
     }
