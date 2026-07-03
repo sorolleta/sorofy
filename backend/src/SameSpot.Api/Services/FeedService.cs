@@ -8,6 +8,7 @@ namespace SameSpot.Api.Services;
 public class FeedService(
     IFollowRepository follows,
     INoteRepository notes,
+    IDiscoveryRepository discoveries,
     AffinityService affinity,
     FeedRanker ranker,
     SpotifyApiService spotify)
@@ -25,6 +26,12 @@ public class FeedService(
         // El horizonte: notas de gente que no sigo (ni mías)
         var horizonNotes = await notes.GetRecentExcludingAuthorsAsync(
             [.. followingIds, userId], HorizonLimit);
+
+        // Lo que ya guardaste no necesita volver a encontrarte: fuera del
+        // feed, que el hueco lo ocupe algo por descubrir
+        var savedItemIds = (await discoveries.GetSavedItemIdsAsync(userId)).ToHashSet();
+        circleNotes = circleNotes.Where(n => !savedItemIds.Contains(n.MusicItemId)).ToList();
+        horizonNotes = horizonNotes.Where(n => !savedItemIds.Contains(n.MusicItemId)).ToList();
 
         // La afinidad se calcula una vez por autor, no por nota
         var affinityByAuthor = new Dictionary<Guid, int>();
