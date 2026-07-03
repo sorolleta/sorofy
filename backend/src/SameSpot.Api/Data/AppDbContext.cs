@@ -97,6 +97,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .Property(n => n.VibeLabel)
             .HasMaxLength(40);
 
+        modelBuilder.Entity<Note>()
+            .Property(n => n.AnchorArtistSpotifyId)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<Note>()
+            .Property(n => n.AnchorArtistName)
+            .HasMaxLength(200);
+
+        // El feed busca notas ancladas a los top artistas del lector; las
+        // notas sin ancla quedan fuera del índice
+        modelBuilder.Entity<Note>()
+            .HasIndex(n => n.AnchorArtistSpotifyId)
+            .HasFilter("\"AnchorArtistSpotifyId\" IS NOT NULL");
+
         // Una canción solo se descubre una vez por usuario
         modelBuilder.Entity<Discovery>()
             .HasIndex(d => new { d.UserId, d.MusicItemId })

@@ -20,10 +20,12 @@ public class NotesController(
     // - musicItemId, para grupos locales ya creados en /api/local-groups
     public record CreateNoteRequest(
         string? ItemType, string? SpotifyItemId, Guid? MusicItemId,
-        string? Text, string? VibeColor, string? VibeEmoji, string? VibeLabel);
+        string? Text, string? VibeColor, string? VibeEmoji, string? VibeLabel,
+        string? AnchorArtistId);
 
     public record UpdateNoteRequest(
-        string? Text, string? VibeColor, string? VibeEmoji, string? VibeLabel);
+        string? Text, string? VibeColor, string? VibeEmoji, string? VibeLabel,
+        string? AnchorArtistId);
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateNoteRequest request)
@@ -36,6 +38,9 @@ public class NotesController(
         }
 
         var myId = User.GetUserId();
+
+        var anchor = await ResolveAnchorAsync(myId, request.AnchorArtistId);
+        if (anchor.Error is not null) return anchor.Error;
 
         MusicItem? item;
         if (request.MusicItemId is Guid musicItemId)
@@ -60,6 +65,8 @@ public class NotesController(
             VibeColor = NormalizeText(request.VibeColor),
             VibeEmoji = NormalizeText(request.VibeEmoji),
             VibeLabel = vibeLabel,
+            AnchorArtistSpotifyId = anchor.SpotifyId,
+            AnchorArtistName = anchor.Name,
             CreatedAt = DateTime.UtcNow,
         };
         await notes.AddAsync(note);
@@ -88,10 +95,15 @@ public class NotesController(
         var note = await notes.GetByIdAsync(id);
         if (note is null || note.UserId != User.GetUserId()) return NotFound();
 
+        var anchor = await ResolveAnchorAsync(note.UserId, request.AnchorArtistId);
+        if (anchor.Error is not null) return anchor.Error;
+
         note.Text = text;
         note.VibeColor = NormalizeText(request.VibeColor);
         note.VibeEmoji = NormalizeText(request.VibeEmoji);
         note.VibeLabel = vibeLabel;
+        note.AnchorArtistSpotifyId = anchor.SpotifyId;
+        note.AnchorArtistName = anchor.Name;
         note.UpdatedAt = DateTime.UtcNow;
         await notes.SaveChangesAsync();
 
@@ -170,6 +182,22 @@ public class NotesController(
         return (item, null);
     }
 
+    // El ancla "si te gusta X" se valida contra Spotify y guardamos su
+    // nombre canónico; ancla vacía = nota sin recomendación dirigida
+    private async Task<(string? SpotifyId, string? Name, IActionResult? Error)> ResolveAnchorAsync(
+        Guid userId, string? rawAnchorId)
+    {
+        var anchorId = NormalizeText(rawAnchorId);
+        if (anchorId is null) return (null, null, null);
+
+        var artist = await spotify.GetArtistAsync(userId, anchorId);
+        if (artist is null)
+        {
+            return (null, null, NotFound(new { message = "Ese artista ancla no existe en Spotify." }));
+        }
+        return (anchorId, artist.Name, null);
+    }
+
     private static MusicItemType? ParseSpotifyItemType(string? raw) => raw?.ToLowerInvariant() switch
     {
         "track" => MusicItemType.Track,
@@ -209,6 +237,8 @@ public class NotesController(
         n.VibeColor,
         n.VibeEmoji,
         n.VibeLabel,
+        n.AnchorArtistSpotifyId,
+        n.AnchorArtistName,
         n.CreatedAt,
         n.UpdatedAt,
     };

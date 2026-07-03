@@ -151,6 +151,14 @@ namespace SameSpot.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AnchorArtistName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("AnchorArtistSpotifyId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -180,6 +188,9 @@ namespace SameSpot.Api.Data.Migrations
                         .HasColumnType("character varying(40)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AnchorArtistSpotifyId")
+                        .HasFilter("\"AnchorArtistSpotifyId\" IS NOT NULL");
 
                     b.HasIndex("MusicItemId");
 

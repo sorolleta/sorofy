@@ -22,6 +22,13 @@ public class Note
     public string? VibeEmoji { get; set; }
     public string? VibeLabel { get; set; }
 
+    // El ancla de recomendación: "si te gusta X, esto te puede gustar".
+    // El feed la cruza con los top artistas de cada lector para llevarle
+    // la nota aunque no siga al autor. Guardamos el nombre canónico de
+    // Spotify para pintarla sin más llamadas.
+    public string? AnchorArtistSpotifyId { get; set; }
+    public string? AnchorArtistName { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
