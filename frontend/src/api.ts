@@ -18,6 +18,20 @@ export function loginUrl(): string {
   return `${API_URL}/api/auth/spotify/login`;
 }
 
+// Flag local de "onboarding pendiente" para redirigir sin ir a la API en
+// cada navegación; la fuente de verdad es needsOnboarding en GET /api/me
+export function needsOnboarding(): boolean {
+  return localStorage.getItem("needsOnboarding") === "1";
+}
+
+export function setNeedsOnboarding(value: boolean) {
+  if (value) {
+    localStorage.setItem("needsOnboarding", "1");
+  } else {
+    localStorage.removeItem("needsOnboarding");
+  }
+}
+
 // El id del usuario logueado, leído del payload del JWT (claim "sub")
 export function getMyUserId(): string | null {
   const token = getToken();

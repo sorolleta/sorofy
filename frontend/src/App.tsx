@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
-import { getToken, clearToken, loginUrl } from "./api";
+import { getToken, clearToken, loginUrl, needsOnboarding, setNeedsOnboarding } from "./api";
 import AuthCallback from "./pages/AuthCallback";
+import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import People from "./pages/People";
 import UserDetail from "./pages/UserDetail";
@@ -25,9 +26,12 @@ function Login() {
 function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   if (!getToken()) return <Navigate to="/" replace />;
+  // El onboarding es obligatorio: sin completarlo no se navega al resto
+  if (needsOnboarding()) return <Navigate to="/onboarding" replace />;
 
   const logout = () => {
     clearToken();
+    setNeedsOnboarding(false);
     navigate("/");
   };
 
@@ -55,6 +59,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/perfil" element={<Layout><Profile /></Layout>} />
         <Route path="/gente" element={<Layout><People /></Layout>} />
         <Route path="/gente/:id" element={<Layout><UserDetail /></Layout>} />

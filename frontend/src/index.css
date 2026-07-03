@@ -452,6 +452,49 @@ h1 {
   }
 }
 
+/* ---- Onboarding ---- */
+.onboarding h2 {
+  font-size: 1.1rem;
+  margin-top: 1.8rem;
+}
+
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-chip {
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tag-chip:hover {
+  border-color: #333;
+}
+
+.tag-chip.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.onboarding select {
+  width: 100%;
+  max-width: 340px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+}
+
 /* ---- Chat ---- */
 .profile-actions {
   display: flex;
