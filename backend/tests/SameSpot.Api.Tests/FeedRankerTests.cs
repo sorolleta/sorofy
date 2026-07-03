@@ -48,7 +48,11 @@ public class FeedRankerTests
         var circle = Enumerable.Range(0, 8)
             .Select(i => new FeedCandidate(NoteFrom($"circulo{i}"), 50))
             .ToList();
-        var horizon = new List<Note> { NoteFrom("horizonte1"), NoteFrom("horizonte2") };
+        var horizon = new List<HorizonCandidate>
+        {
+            new(NoteFrom("horizonte1"), MatchesTaste: false),
+            new(NoteFrom("horizonte2"), MatchesTaste: false),
+        };
 
         var feed = _ranker.Rank(circle, horizon, Now);
 
@@ -74,10 +78,10 @@ public class FeedRankerTests
     [Fact]
     public void SinCirculo_ElHorizonteHaceDeFeedDeBienvenida()
     {
-        var horizon = new List<Note>
+        var horizon = new List<HorizonCandidate>
         {
-            NoteFrom("antigua", daysOld: 3),
-            NoteFrom("nueva", daysOld: 0),
+            new(NoteFrom("antigua", daysOld: 3), MatchesTaste: false),
+            new(NoteFrom("nueva", daysOld: 0), MatchesTaste: false),
         };
 
         var feed = _ranker.Rank([], horizon, Now);
@@ -85,5 +89,25 @@ public class FeedRankerTests
         Assert.Equal(2, feed.Count);
         Assert.Equal("nueva", feed[0].Text);
         Assert.Equal("antigua", feed[1].Text);
+    }
+
+    [Fact]
+    public void EnElHorizonte_LaRecomendacionDirigidaGanaAunqueSeaMasVieja()
+    {
+        var circle = Enumerable.Range(0, 4)
+            .Select(i => new FeedCandidate(NoteFrom($"circulo{i}"), 50))
+            .ToList();
+        var horizon = new List<HorizonCandidate>
+        {
+            new(NoteFrom("novedad", daysOld: 0), MatchesTaste: false),
+            new(NoteFrom("dirigida", daysOld: 5), MatchesTaste: true),
+        };
+
+        var feed = _ranker.Rank(circle, horizon, Now);
+
+        // El primer hueco de horizonte (5º) es para la nota anclada a un
+        // artista que el lector ya escucha, aunque haya otra más nueva
+        Assert.Equal("dirigida", feed[4].Text);
+        Assert.Equal("novedad", feed[5].Text);
     }
 }

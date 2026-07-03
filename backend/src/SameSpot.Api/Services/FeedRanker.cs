@@ -16,14 +16,19 @@ public class FeedRanker
     private const double FreshnessWeight = 0.4;
     private const int HorizonSlot = 5;
 
-    public List<Note> Rank(List<FeedCandidate> circle, List<Note> horizon, DateTime now)
+    public List<Note> Rank(List<FeedCandidate> circle, List<HorizonCandidate> horizon, DateTime now)
     {
         var orderedCircle = circle
             .OrderByDescending(c => Score(c, now))
             .Select(c => c.Note)
             .ToList();
 
-        var orderedHorizon = new Queue<Note>(horizon.OrderByDescending(n => n.CreatedAt));
+        // En el horizonte mandan las recomendaciones dirigidas (ancladas a
+        // un artista que el lector ya escucha) y después la novedad
+        var orderedHorizon = new Queue<Note>(horizon
+            .OrderByDescending(h => h.MatchesTaste)
+            .ThenByDescending(h => h.Note.CreatedAt)
+            .Select(h => h.Note));
 
         // Mezcla: cada quinto hueco es de horizonte; si un lado se agota,
         // el otro rellena (un usuario sin seguidos ve solo horizonte, que
@@ -57,3 +62,7 @@ public class FeedRanker
 
 // Una nota del círculo junto con la afinidad (0-100) con su autor
 public record FeedCandidate(Note Note, int AffinityScore);
+
+// Una nota de horizonte; MatchesTaste = su ancla apunta a un artista que
+// el lector ya escucha, así que va primero en los huecos de horizonte
+public record HorizonCandidate(Note Note, bool MatchesTaste);

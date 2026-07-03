@@ -33,6 +33,18 @@ public class NoteRepository(AppDbContext db) : INoteRepository
             .Take(limit)
             .ToListAsync();
 
+    // Recomendaciones dirigidas: notas de desconocidos ancladas a artistas
+    // que el lector ya escucha ("si te gusta X...")
+    public Task<List<Note>> GetRecentAnchoredForArtistsAsync(
+        List<string> artistSpotifyIds, List<Guid> excludedAuthorIds, int limit) =>
+        db.Notes.Include(n => n.MusicItem).Include(n => n.User)
+            .Where(n => n.AnchorArtistSpotifyId != null
+                && artistSpotifyIds.Contains(n.AnchorArtistSpotifyId)
+                && !excludedAuthorIds.Contains(n.UserId))
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
     public Task AddAsync(Note note) => db.Notes.AddAsync(note).AsTask();
 
     public void Remove(Note note) => db.Notes.Remove(note);

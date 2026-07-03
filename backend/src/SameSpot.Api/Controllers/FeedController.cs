@@ -15,11 +15,12 @@ public class FeedController(FeedService feedService) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetNotesFeed()
     {
-        var notes = await feedService.GetNotesFeedAsync(User.GetUserId());
-        return Ok(notes.Select(n => new
+        var feed = await feedService.GetNotesFeedAsync(User.GetUserId());
+        return Ok(feed.Select(f => new
         {
-            Author = new { n.User.Id, n.User.DisplayName, n.User.AvatarUrl },
-            Note = NotesController.ToResponse(n),
+            Author = new { f.Note.User.Id, f.Note.User.DisplayName, f.Note.User.AvatarUrl },
+            Note = NotesController.ToResponse(f.Note),
+            f.BecauseArtist,
         }));
     }
 
