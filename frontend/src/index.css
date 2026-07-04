@@ -356,6 +356,53 @@ h1 {
   font-size: 0.85rem;
 }
 
+/* ---- Player embebido (YouTube / SoundCloud) ---- */
+.platform-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.45rem;
+}
+
+.btn-platform {
+  background: none;
+  border: 1px solid #3a3a3a;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-platform:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.embed-wrap {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.embed-wrap iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+.embed-wrap.video {
+  aspect-ratio: 16 / 9;
+}
+
+.embed-wrap.video iframe {
+  height: 100%;
+}
+
+.embed-wrap.audio iframe {
+  height: 166px;
+}
+
 /* ---- Ancla de recomendación (formulario) ---- */
 .anchor-picker {
   margin-top: 0.8rem;

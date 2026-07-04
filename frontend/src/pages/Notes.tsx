@@ -35,6 +35,8 @@ export default function Notes() {
   const [anchorOptions, setAnchorOptions] = useState<SearchArtist[]>([]);
   const [anchorSearching, setAnchorSearching] = useState(false);
   const [newGroupDescription, setNewGroupDescription] = useState("");
+  const [newGroupYoutube, setNewGroupYoutube] = useState("");
+  const [newGroupSoundcloud, setNewGroupSoundcloud] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -115,8 +117,12 @@ export default function Notes() {
       const group = await api.post<LocalGroup>("/api/local-groups", {
         name: query.trim(),
         description: newGroupDescription,
+        youtubeUrl: newGroupYoutube,
+        soundcloudUrl: newGroupSoundcloud,
       });
       setNewGroupDescription("");
+      setNewGroupYoutube("");
+      setNewGroupSoundcloud("");
       openDraft({ musicItemId: group.id, name: group.name });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear el grupo");
@@ -424,6 +430,21 @@ export default function Notes() {
                   maxLength={500}
                   value={newGroupDescription}
                   onChange={(e) => setNewGroupDescription(e.target.value)}
+                />
+                {/* Su música no está en Spotify: que se pueda escuchar igual */}
+                <input
+                  type="url"
+                  placeholder="Vídeo de YouTube: youtube.com/watch?v=… (opcional)"
+                  maxLength={300}
+                  value={newGroupYoutube}
+                  onChange={(e) => setNewGroupYoutube(e.target.value)}
+                />
+                <input
+                  type="url"
+                  placeholder="Audio de SoundCloud: soundcloud.com/… (opcional)"
+                  maxLength={300}
+                  value={newGroupSoundcloud}
+                  onChange={(e) => setNewGroupSoundcloud(e.target.value)}
                 />
                 <button className="btn btn-sm" onClick={createLocalGroup} disabled={saving}>
                   Crear grupo

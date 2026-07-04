@@ -123,6 +123,9 @@ export interface MusicItem {
   artistName: string | null;
   imageUrl: string | null;
   description: string | null;
+  // La música de los grupos locales vive fuera de Spotify
+  youtubeUrl: string | null;
+  soundcloudUrl: string | null;
 }
 
 export interface Note {
@@ -143,5 +146,8 @@ export interface LocalGroup {
   id: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
+  youtubeUrl: string | null;
+  soundcloudUrl: string | null;
   createdAt: string;
 }

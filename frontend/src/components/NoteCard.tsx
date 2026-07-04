@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Note, MusicItem, NoteAuthor } from "../types";
 
@@ -17,9 +18,23 @@ const TYPE_LABEL: Record<MusicItem["type"], string> = {
   localGroup: "grupo local",
 };
 
+// De un enlace de YouTube al del player embebido (dominio sin cookies)
+function youtubeEmbedUrl(url: string): string | null {
+  const match = url.match(/(?:v=|youtu\.be\/|\/embed\/)([\w-]{6,})/);
+  return match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : null;
+}
+
+function soundcloudEmbedUrl(url: string): string {
+  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954`;
+}
+
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño: esto es contexto, no un tablón de reseñas
 export default function NoteCard({ note, author, actions, because }: Props) {
+  // El player embebido se monta solo al pulsar: el feed no carga iframes
+  const [playing, setPlaying] = useState<"youtube" | "soundcloud" | null>(null);
+  const youtubeEmbed = note.item.youtubeUrl ? youtubeEmbedUrl(note.item.youtubeUrl) : null;
+
   return (
     <li className="note-card">
       {author && (
@@ -78,6 +93,30 @@ export default function NoteCard({ note, author, actions, because }: Props) {
             {note.item.artistName && ` — ${note.item.artistName}`}
             <span className="badge">{TYPE_LABEL[note.item.type]}</span>
           </p>
+          {/* La música que no está en Spotify se escucha aquí dentro,
+              sin sacar a nadie del feed */}
+          {(youtubeEmbed || note.item.soundcloudUrl) && (
+            <p className="platform-actions">
+              {youtubeEmbed && (
+                <button
+                  type="button"
+                  className="btn-platform"
+                  onClick={() => setPlaying(playing === "youtube" ? null : "youtube")}
+                >
+                  {playing === "youtube" ? "✕ Cerrar vídeo" : "▶ Ver en YouTube"}
+                </button>
+              )}
+              {note.item.soundcloudUrl && (
+                <button
+                  type="button"
+                  className="btn-platform"
+                  onClick={() => setPlaying(playing === "soundcloud" ? null : "soundcloud")}
+                >
+                  {playing === "soundcloud" ? "✕ Cerrar audio" : "▶ Escuchar en SoundCloud"}
+                </button>
+              )}
+            </p>
+          )}
           <p className="note-date muted">
             {new Date(note.createdAt).toLocaleDateString()}
             {note.updatedAt && " · editada"}
@@ -85,6 +124,25 @@ export default function NoteCard({ note, author, actions, because }: Props) {
         </div>
         {actions && <div className="note-actions">{actions}</div>}
       </div>
+      {playing === "youtube" && youtubeEmbed && (
+        <div className="embed-wrap video">
+          <iframe
+            src={youtubeEmbed}
+            title={`Vídeo de ${note.item.name}`}
+            allow="accelerometer; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
+      {playing === "soundcloud" && note.item.soundcloudUrl && (
+        <div className="embed-wrap audio">
+          <iframe
+            src={soundcloudEmbedUrl(note.item.soundcloudUrl)}
+            title={`Audio de ${note.item.name}`}
+            allow="encrypted-media"
+          />
+        </div>
+      )}
     </li>
   );
 }
