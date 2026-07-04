@@ -45,6 +45,18 @@ public class NoteRepository(AppDbContext db) : INoteRepository
             .Take(limit)
             .ToListAsync();
 
+    // Proximidad local: notas de desconocidos sobre grupos de tu provincia
+    // (la charanga de tu pueblo te encuentra sin necesidad de follow)
+    public Task<List<Note>> GetRecentLocalForProvinceAsync(
+        string province, List<Guid> excludedAuthorIds, int limit) =>
+        db.Notes.Include(n => n.MusicItem).Include(n => n.User)
+            .Where(n => n.MusicItem.Type == MusicItemType.LocalGroup
+                && n.MusicItem.Province == province
+                && !excludedAuthorIds.Contains(n.UserId))
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
     public Task AddAsync(Note note) => db.Notes.AddAsync(note).AsTask();
 
     public void Remove(Note note) => db.Notes.Remove(note);

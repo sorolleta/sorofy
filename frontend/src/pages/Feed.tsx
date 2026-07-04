@@ -85,6 +85,7 @@ export default function Feed() {
               author={entry.author}
               actions={saveAction(entry)}
               because={entry.becauseArtist}
+              becauseLocal={entry.becauseProvince}
             />
           ))}
         </ul>

@@ -9,6 +9,8 @@ interface Props {
   actions?: React.ReactNode;
   // Si la nota llegó por su ancla, el artista del lector que la trajo
   because?: string | null;
+  // Si es un grupo de la provincia del lector, cuál
+  becauseLocal?: string | null;
 }
 
 const TYPE_LABEL: Record<MusicItem["type"], string> = {
@@ -30,7 +32,7 @@ function soundcloudEmbedUrl(url: string): string {
 
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño: esto es contexto, no un tablón de reseñas
-export default function NoteCard({ note, author, actions, because }: Props) {
+export default function NoteCard({ note, author, actions, because, becauseLocal }: Props) {
   // El player embebido se monta solo al pulsar: el feed no carga iframes
   const [playing, setPlaying] = useState<"youtube" | "soundcloud" | null>(null);
   const youtubeEmbed = note.item.youtubeUrl ? youtubeEmbedUrl(note.item.youtubeUrl) : null;
@@ -79,10 +81,12 @@ export default function NoteCard({ note, author, actions, because }: Props) {
               </span>
             </p>
           )}
-          {/* La recomendación se explica: personalizada si el ancla coincide
-              con tus artistas, genérica si no */}
+          {/* La recomendación se explica: el ancla que coincide con tus
+              artistas manda; si no, la cercanía; genérica en gris si nada */}
           {because ? (
             <p className="note-because">Te llega porque escuchas {because}</p>
+          ) : becauseLocal ? (
+            <p className="note-because">Cerca de ti · {becauseLocal}</p>
           ) : (
             note.anchorArtistName && (
               <p className="note-anchor muted">Si te gusta {note.anchorArtistName}</p>
@@ -91,7 +95,12 @@ export default function NoteCard({ note, author, actions, because }: Props) {
           <p className="note-item muted">
             {note.item.name}
             {note.item.artistName && ` — ${note.item.artistName}`}
-            <span className="badge">{TYPE_LABEL[note.item.type]}</span>
+            {note.item.type === "localGroup" && note.item.province && ` — ${note.item.province}`}
+            <span className="badge">
+              {note.item.type === "localGroup"
+                ? (note.item.category ?? TYPE_LABEL.localGroup).toLowerCase()
+                : TYPE_LABEL[note.item.type]}
+            </span>
           </p>
           {/* La música que no está en Spotify se escucha aquí dentro,
               sin sacar a nadie del feed */}

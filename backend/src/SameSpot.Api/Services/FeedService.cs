@@ -10,6 +10,7 @@ public class FeedService(
     INoteRepository notes,
     IDiscoveryRepository discoveries,
     ITopItemsRepository tops,
+    IUserRepository users,
     AffinityService affinity,
     FeedRanker ranker,
     SpotifyApiService spotify)
@@ -32,12 +33,20 @@ public class FeedService(
             .Select(a => a.SpotifyArtistId)
             .ToHashSet();
 
-        // El horizonte: primero recomendaciones dirigidas (notas de
-        // desconocidos ancladas a artistas que escucho), luego lo último
+        // El horizonte, por orden de puntería: recomendaciones ancladas a
+        // artistas que escucho, grupos locales de mi provincia y, de
+        // relleno, lo último de desconocidos
         List<Note> anchoredHorizon = myTopArtistIds.Count == 0
             ? []
             : await notes.GetRecentAnchoredForArtistsAsync(
                 [.. myTopArtistIds], excludedAuthors, HorizonLimit);
+
+        var myProvince = (await users.GetByIdAsync(userId))?.Province;
+        List<Note> localHorizon = myProvince is null
+            ? []
+            : await notes.GetRecentLocalForProvinceAsync(
+                myProvince, excludedAuthors, HorizonLimit);
+
         var generalHorizon = await notes.GetRecentExcludingAuthorsAsync(
             excludedAuthors, HorizonLimit);
 
@@ -47,10 +56,14 @@ public class FeedService(
         circleNotes = circleNotes.Where(n => !savedItemIds.Contains(n.MusicItemId)).ToList();
 
         var anchoredIds = anchoredHorizon.Select(n => n.Id).ToHashSet();
-        var horizon = anchoredHorizon
+        var targeted = anchoredHorizon
+            .Concat(localHorizon.Where(n => !anchoredIds.Contains(n.Id)))
+            .ToList();
+        var targetedIds = targeted.Select(n => n.Id).ToHashSet();
+        var horizon = targeted
             .Select(n => new HorizonCandidate(n, MatchesTaste: true))
             .Concat(generalHorizon
-                .Where(n => !anchoredIds.Contains(n.Id))
+                .Where(n => !targetedIds.Contains(n.Id))
                 .Select(n => new HorizonCandidate(n, MatchesTaste: false)))
             .Where(h => !savedItemIds.Contains(h.Note.MusicItemId))
             .ToList();
@@ -68,12 +81,19 @@ public class FeedService(
 
         var ranked = ranker.Rank(candidates, horizon, DateTime.UtcNow);
 
-        // La explicación de la tarjeta ("te llega por X, que ya escuchas")
-        // solo cuando el ancla coincide de verdad con los tops del lector
+        // La explicación de la tarjeta: el ancla que coincide con tus tops
+        // manda; si no, la cercanía ("grupo de tu provincia")
         return ranked
-            .Select(n => new FeedNote(n,
-                n.AnchorArtistSpotifyId is not null && myTopArtistIds.Contains(n.AnchorArtistSpotifyId)
+            .Select(n => new FeedNote(
+                n,
+                BecauseArtist: n.AnchorArtistSpotifyId is not null
+                    && myTopArtistIds.Contains(n.AnchorArtistSpotifyId)
                     ? n.AnchorArtistName
+                    : null,
+                BecauseProvince: n.MusicItem.Type == MusicItemType.LocalGroup
+                    && myProvince is not null
+                    && n.MusicItem.Province == myProvince
+                    ? myProvince
                     : null))
             .ToList();
     }
@@ -117,8 +137,9 @@ public class FeedService(
 }
 
 // Una nota del feed con su explicación opcional: el artista ancla que la
-// trajo hasta este lector (null si llegó por círculo u horizonte normal)
-public record FeedNote(Note Note, string? BecauseArtist);
+// trajo hasta este lector, o la provincia si es un grupo de su zona
+// (ambos null si llegó por círculo u horizonte normal)
+public record FeedNote(Note Note, string? BecauseArtist, string? BecauseProvince);
 
 public record FeedItem(Guid UserId, string DisplayName, string? AvatarUrl, NowPlayingInfo? NowPlaying);
 
