@@ -73,6 +73,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .Property(i => i.SoundcloudUrl)
             .HasMaxLength(300);
 
+        modelBuilder.Entity<MusicItem>()
+            .Property(i => i.Category)
+            .HasMaxLength(30);
+
+        modelBuilder.Entity<MusicItem>()
+            .Property(i => i.Province)
+            .HasMaxLength(30);
+
+        // La proximidad local busca grupos por provincia; el resto de
+        // items (Province null) queda fuera del índice
+        modelBuilder.Entity<MusicItem>()
+            .HasIndex(i => i.Province)
+            .HasFilter("\"Province\" IS NOT NULL");
+
         // La bitácora de un usuario se lee en orden cronológico
         modelBuilder.Entity<Note>()
             .HasIndex(n => new { n.UserId, n.CreatedAt });

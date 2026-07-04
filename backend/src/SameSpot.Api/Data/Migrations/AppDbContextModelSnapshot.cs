@@ -116,6 +116,10 @@ namespace SameSpot.Api.Data.Migrations
                     b.Property<string>("ArtistName")
                         .HasColumnType("text");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -129,6 +133,10 @@ namespace SameSpot.Api.Data.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Province")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("SoundcloudUrl")
                         .HasMaxLength(300)
@@ -145,6 +153,9 @@ namespace SameSpot.Api.Data.Migrations
                         .HasColumnType("character varying(300)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Province")
+                        .HasFilter("\"Province\" IS NOT NULL");
 
                     b.HasIndex("Type", "SpotifyId")
                         .IsUnique()

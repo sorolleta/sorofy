@@ -523,6 +523,22 @@ h1 {
   margin-left: 0;
 }
 
+.new-group-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.new-group select {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+}
+
 .search-form {
   display: flex;
   gap: 0.8rem;

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SameSpot.Api.Config;
 using SameSpot.Api.Models;
 using SameSpot.Api.Repositories;
 using SameSpot.Api.Services;
@@ -17,7 +18,16 @@ public class LocalGroupsController(
     MediaLinkService media) : ControllerBase
 {
     public record CreateLocalGroupRequest(
-        string? Name, string? Description, string? YoutubeUrl, string? SoundcloudUrl);
+        string? Name, string? Description, string? YoutubeUrl, string? SoundcloudUrl,
+        string? Category, string? Province);
+
+    // Los catálogos del formulario de crear grupo
+    [HttpGet("options")]
+    public IActionResult GetOptions() => Ok(new
+    {
+        Categories = LocalGroupCategories.All,
+        Provinces = SpainProvinces.All,
+    });
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateLocalGroupRequest request)
@@ -25,6 +35,16 @@ public class LocalGroupsController(
         if (string.IsNullOrWhiteSpace(request.Name))
         {
             return BadRequest(new { message = "Falta el nombre del grupo." });
+        }
+        // Qué son y de dónde son, obligatorios: la proximidad local del
+        // feed depende de la provincia
+        if (request.Category is null || !LocalGroupCategories.IsValid(request.Category))
+        {
+            return BadRequest(new { message = "Elige una categoría de la lista." });
+        }
+        if (request.Province is null || !SpainProvinces.IsValid(request.Province))
+        {
+            return BadRequest(new { message = "Elige una provincia de la lista." });
         }
 
         // Los enlaces son opcionales, pero si vienen tienen que ser de su
@@ -69,6 +89,8 @@ public class LocalGroupsController(
             YoutubeUrl = youtubeUrl,
             SoundcloudUrl = soundcloudUrl,
             ImageUrl = thumbnailUrl,
+            Category = request.Category,
+            Province = request.Province,
             CreatedAt = DateTime.UtcNow,
         };
         await items.AddAsync(item);
@@ -99,6 +121,8 @@ public class LocalGroupsController(
         item.ImageUrl,
         item.YoutubeUrl,
         item.SoundcloudUrl,
+        item.Category,
+        item.Province,
         item.CreatedAt,
     };
 }

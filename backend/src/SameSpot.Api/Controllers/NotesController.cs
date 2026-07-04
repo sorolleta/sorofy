@@ -234,6 +234,8 @@ public class NotesController(
             n.MusicItem.Description,
             n.MusicItem.YoutubeUrl,
             n.MusicItem.SoundcloudUrl,
+            n.MusicItem.Category,
+            n.MusicItem.Province,
         },
         n.Text,
         n.VibeColor,

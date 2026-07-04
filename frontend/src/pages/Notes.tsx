@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { LocalGroup, Note, SearchArtist, SearchResponse } from "../types";
+import type { LocalGroup, LocalGroupOptions, Note, SearchArtist, SearchResponse } from "../types";
 import NoteList from "../components/NoteList";
 
 // Lo que hace falta para abrir el formulario: un item de Spotify, un grupo
@@ -37,6 +37,9 @@ export default function Notes() {
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [newGroupYoutube, setNewGroupYoutube] = useState("");
   const [newGroupSoundcloud, setNewGroupSoundcloud] = useState("");
+  const [newGroupCategory, setNewGroupCategory] = useState("");
+  const [newGroupProvince, setNewGroupProvince] = useState("");
+  const [groupOptions, setGroupOptions] = useState<LocalGroupOptions | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -46,6 +49,10 @@ export default function Notes() {
   };
 
   useEffect(loadMine, []);
+
+  useEffect(() => {
+    api.get<LocalGroupOptions>("/api/local-groups/options").then(setGroupOptions).catch(() => {});
+  }, []);
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,10 +126,14 @@ export default function Notes() {
         description: newGroupDescription,
         youtubeUrl: newGroupYoutube,
         soundcloudUrl: newGroupSoundcloud,
+        category: newGroupCategory,
+        province: newGroupProvince,
       });
       setNewGroupDescription("");
       setNewGroupYoutube("");
       setNewGroupSoundcloud("");
+      setNewGroupCategory("");
+      setNewGroupProvince("");
       openDraft({ musicItemId: group.id, name: group.name });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear el grupo");
@@ -424,6 +435,32 @@ export default function Notes() {
               {/* Si el grupo no existe en Spotify ni aquí, lo creas tú */}
               <div className="new-group">
                 <p className="muted">¿No está? Crea "{query.trim()}" como grupo local:</p>
+                {/* Qué son y de dónde son, obligatorios: la provincia
+                    alimenta la proximidad local del feed */}
+                <div className="new-group-row">
+                  <select
+                    value={newGroupCategory}
+                    onChange={(e) => setNewGroupCategory(e.target.value)}
+                  >
+                    <option value="">Categoría…</option>
+                    {groupOptions?.categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={newGroupProvince}
+                    onChange={(e) => setNewGroupProvince(e.target.value)}
+                  >
+                    <option value="">Provincia…</option>
+                    {groupOptions?.provinces.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <input
                   type="text"
                   placeholder="Descripción: la charanga de las fiestas de… (opcional)"
@@ -446,7 +483,11 @@ export default function Notes() {
                   value={newGroupSoundcloud}
                   onChange={(e) => setNewGroupSoundcloud(e.target.value)}
                 />
-                <button className="btn btn-sm" onClick={createLocalGroup} disabled={saving}>
+                <button
+                  className="btn btn-sm"
+                  onClick={createLocalGroup}
+                  disabled={saving || !newGroupCategory || !newGroupProvince}
+                >
                   Crear grupo
                 </button>
               </div>

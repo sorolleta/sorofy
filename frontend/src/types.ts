@@ -66,6 +66,7 @@ export interface FeedEntry {
   author: NoteAuthor;
   note: Note;
   becauseArtist: string | null;
+  becauseProvince: string | null;
 }
 
 export interface Affinity {
@@ -126,6 +127,9 @@ export interface MusicItem {
   // La música de los grupos locales vive fuera de Spotify
   youtubeUrl: string | null;
   soundcloudUrl: string | null;
+  // Solo grupos locales: qué son y de dónde son
+  category: string | null;
+  province: string | null;
 }
 
 export interface Note {
@@ -149,5 +153,13 @@ export interface LocalGroup {
   imageUrl: string | null;
   youtubeUrl: string | null;
   soundcloudUrl: string | null;
+  category: string | null;
+  province: string | null;
   createdAt: string;
+}
+
+// Catálogos del formulario de crear grupo local
+export interface LocalGroupOptions {
+  categories: string[];
+  provinces: string[];
 }

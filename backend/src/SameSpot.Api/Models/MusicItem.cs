@@ -27,6 +27,11 @@ public class MusicItem
     public string? YoutubeUrl { get; set; }
     public string? SoundcloudUrl { get; set; }
 
+    // Solo grupos locales (obligatorios al crear): qué son y de dónde son.
+    // La provincia alimenta la proximidad local del feed.
+    public string? Category { get; set; }
+    public string? Province { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }
 
