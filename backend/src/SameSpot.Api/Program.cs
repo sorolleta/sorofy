@@ -48,6 +48,7 @@ builder.Services.AddScoped<AffinityService>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddTransient<SpotifyRateLimitHandler>();
 builder.Services.AddHttpClient<SpotifyAuthService>();
+builder.Services.AddHttpClient<MediaLinkService>();
 builder.Services.AddHttpClient<SpotifyApiService>()
     .AddHttpMessageHandler<SpotifyRateLimitHandler>();
 

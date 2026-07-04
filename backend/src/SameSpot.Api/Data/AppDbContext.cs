@@ -65,6 +65,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .Property(i => i.Description)
             .HasMaxLength(500);
 
+        modelBuilder.Entity<MusicItem>()
+            .Property(i => i.YoutubeUrl)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<MusicItem>()
+            .Property(i => i.SoundcloudUrl)
+            .HasMaxLength(300);
+
         // La bitácora de un usuario se lee en orden cronológico
         modelBuilder.Entity<Note>()
             .HasIndex(n => new { n.UserId, n.CreatedAt });

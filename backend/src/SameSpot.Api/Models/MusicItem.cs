@@ -22,6 +22,11 @@ public class MusicItem
     // Contexto de los grupos locales: "los que cerraron San Juan 2024"
     public string? Description { get; set; }
 
+    // La música de los grupos locales vive fuera de Spotify: enlaces
+    // opcionales a YouTube/SoundCloud, validados con oEmbed al crear
+    public string? YoutubeUrl { get; set; }
+    public string? SoundcloudUrl { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }
 

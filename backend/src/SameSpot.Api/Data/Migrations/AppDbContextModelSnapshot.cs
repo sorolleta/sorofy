@@ -130,11 +130,19 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SoundcloudUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
                     b.Property<string>("SpotifyId")
                         .HasColumnType("text");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
+
+                    b.Property<string>("YoutubeUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.HasKey("Id");
 
