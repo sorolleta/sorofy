@@ -69,6 +69,12 @@ export interface FeedEntry {
   becauseProvince: string | null;
 }
 
+// La ficha de un item: sus datos y todas las notas de la comunidad
+export interface MusicItemDetail {
+  item: MusicItem;
+  notes: { author: NoteAuthor; note: Note }[];
+}
+
 export interface Affinity {
   score: number;
   commonArtists: string[];

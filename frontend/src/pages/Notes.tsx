@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { api } from "../api";
 import type { LocalGroup, LocalGroupOptions, Note, SearchArtist, SearchResponse } from "../types";
 import NoteList from "../components/NoteList";
@@ -52,6 +53,19 @@ export default function Notes() {
 
   useEffect(() => {
     api.get<LocalGroupOptions>("/api/local-groups/options").then(setGroupOptions).catch(() => {});
+  }, []);
+
+  // La ficha de un item ("Escribir una nota") llega con el item ya elegido
+  const location = useLocation();
+  useEffect(() => {
+    const incoming = (location.state as { noteDraft?: Draft } | null)?.noteDraft;
+    if (incoming) {
+      openDraft(incoming);
+      // Limpiar el state para que recargar no reabra el formulario
+      window.history.replaceState({}, "");
+    }
+    // Solo al montar: openDraft es estable y location.state llega con la navegación
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const search = async (e: React.FormEvent) => {

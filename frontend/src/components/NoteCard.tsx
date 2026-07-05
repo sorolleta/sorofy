@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Note, MusicItem, NoteAuthor } from "../types";
+import { soundcloudEmbedUrl, youtubeEmbedUrl } from "./PlatformPlayer";
 
 interface Props {
   note: Note;
@@ -19,16 +20,6 @@ const TYPE_LABEL: Record<MusicItem["type"], string> = {
   artist: "artista",
   localGroup: "grupo local",
 };
-
-// De un enlace de YouTube al del player embebido (dominio sin cookies)
-function youtubeEmbedUrl(url: string): string | null {
-  const match = url.match(/(?:v=|youtu\.be\/|\/embed\/)([\w-]{6,})/);
-  return match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : null;
-}
-
-function soundcloudEmbedUrl(url: string): string {
-  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954`;
-}
 
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño: esto es contexto, no un tablón de reseñas
@@ -50,24 +41,28 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
         </p>
       )}
       <div className="note-card-main">
-        {note.item.imageUrl ? (
-          <img className="cover" src={note.item.imageUrl} alt="" />
-        ) : (
-          <div
-            className="cover cover-placeholder"
-            // Sin carátula (grupos locales), el hueco toma el color del vibe
-            // de la nota en un degradado tenue; sin vibe, gris neutro
-            style={
-              note.vibeColor
-                ? {
-                    background: `linear-gradient(135deg, ${note.vibeColor}80, ${note.vibeColor}26)`,
-                  }
-                : undefined
-            }
-          >
-            ♪
-          </div>
-        )}
+        {/* Carátula y nombre llevan a la ficha del item, con todas las
+            notas de la comunidad sobre él */}
+        <Link to={`/musica/${note.item.id}`} className="cover-link">
+          {note.item.imageUrl ? (
+            <img className="cover" src={note.item.imageUrl} alt="" />
+          ) : (
+            <div
+              className="cover cover-placeholder"
+              // Sin carátula (grupos locales), el hueco toma el color del vibe
+              // de la nota en un degradado tenue; sin vibe, gris neutro
+              style={
+                note.vibeColor
+                  ? {
+                      background: `linear-gradient(135deg, ${note.vibeColor}80, ${note.vibeColor}26)`,
+                    }
+                  : undefined
+              }
+            >
+              ♪
+            </div>
+          )}
+        </Link>
         <div className="note-body">
           {note.text && <p className="note-text">{note.text}</p>}
           {note.vibeLabel && (
@@ -93,7 +88,7 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
             )
           )}
           <p className="note-item muted">
-            {note.item.name}
+            <Link to={`/musica/${note.item.id}`}>{note.item.name}</Link>
             {note.item.artistName && ` — ${note.item.artistName}`}
             {note.item.type === "localGroup" && note.item.province && ` — ${note.item.province}`}
             <span className="badge">

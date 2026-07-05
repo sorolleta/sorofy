@@ -7,6 +7,7 @@ import People from "./pages/People";
 import UserDetail from "./pages/UserDetail";
 import Feed from "./pages/Feed";
 import Notes from "./pages/Notes";
+import MusicItemDetail from "./pages/MusicItemDetail";
 import Chats from "./pages/Chats";
 import ChatThread from "./pages/ChatThread";
 
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/gente/:id" element={<Layout><UserDetail /></Layout>} />
         <Route path="/feed" element={<Layout><Feed /></Layout>} />
         <Route path="/notas" element={<Layout><Notes /></Layout>} />
+        <Route path="/musica/:id" element={<Layout><MusicItemDetail /></Layout>} />
         {/* La ruta vieja de reseñas lleva a las notas, su sucesora */}
         <Route path="/resenas" element={<Navigate to="/notas" replace />} />
         <Route path="/chats" element={<Layout><Chats /></Layout>} />
