@@ -145,6 +145,8 @@ export interface Note {
   vibeColor: string | null;
   vibeEmoji: string | null;
   vibeLabel: string | null;
+  // "Escúchalo aquí": el audio exacto del que habla la nota (YouTube/SoundCloud)
+  listenUrl: string | null;
   // El ancla de recomendación: "si te gusta X, esto te puede gustar"
   anchorArtistSpotifyId: string | null;
   anchorArtistName: string | null;

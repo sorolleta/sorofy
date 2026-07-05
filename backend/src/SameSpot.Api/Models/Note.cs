@@ -22,6 +22,11 @@ public class Note
     public string? VibeEmoji { get; set; }
     public string? VibeLabel { get; set; }
 
+    // "Escúchalo aquí": enlace opcional de YouTube o SoundCloud con el
+    // audio exacto del que habla la nota (la versión en directo, el set,
+    // el tema que no está en Spotify...). Validado con oEmbed al guardar.
+    public string? ListenUrl { get; set; }
+
     // El ancla de recomendación: "si te gusta X, esto te puede gustar".
     // El feed la cruza con los top artistas de cada lector para llevarle
     // la nota aunque no siga al autor. Guardamos el nombre canónico de

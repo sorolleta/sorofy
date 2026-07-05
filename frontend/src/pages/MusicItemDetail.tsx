@@ -80,6 +80,8 @@ export default function MusicItemDetail() {
       <PlatformPlayer
         youtubeUrl={item.youtubeUrl}
         soundcloudUrl={item.soundcloudUrl}
+        spotifyType={item.type}
+        spotifyId={item.spotifyId}
         title={item.name}
       />
 

@@ -13,7 +13,8 @@ namespace SameSpot.Api.Controllers;
 public class NotesController(
     INoteRepository notes,
     IMusicItemRepository items,
-    SpotifyApiService spotify) : ControllerBase
+    SpotifyApiService spotify,
+    MediaLinkService media) : ControllerBase
 {
     // El item se indica de una de estas dos formas:
     // - itemType (track/album/artist) + spotifyItemId, para cosas de Spotify
@@ -21,11 +22,11 @@ public class NotesController(
     public record CreateNoteRequest(
         string? ItemType, string? SpotifyItemId, Guid? MusicItemId,
         string? Text, string? VibeColor, string? VibeEmoji, string? VibeLabel,
-        string? AnchorArtistId);
+        string? AnchorArtistId, string? ListenUrl);
 
     public record UpdateNoteRequest(
         string? Text, string? VibeColor, string? VibeEmoji, string? VibeLabel,
-        string? AnchorArtistId);
+        string? AnchorArtistId, string? ListenUrl);
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateNoteRequest request)
@@ -41,6 +42,9 @@ public class NotesController(
 
         var anchor = await ResolveAnchorAsync(myId, request.AnchorArtistId);
         if (anchor.Error is not null) return anchor.Error;
+
+        var listen = await ResolveListenUrlAsync(request.ListenUrl);
+        if (listen.Error is not null) return listen.Error;
 
         MusicItem? item;
         if (request.MusicItemId is Guid musicItemId)
@@ -65,6 +69,7 @@ public class NotesController(
             VibeColor = NormalizeText(request.VibeColor),
             VibeEmoji = NormalizeText(request.VibeEmoji),
             VibeLabel = vibeLabel,
+            ListenUrl = listen.Url,
             AnchorArtistSpotifyId = anchor.SpotifyId,
             AnchorArtistName = anchor.Name,
             CreatedAt = DateTime.UtcNow,
@@ -98,10 +103,14 @@ public class NotesController(
         var anchor = await ResolveAnchorAsync(note.UserId, request.AnchorArtistId);
         if (anchor.Error is not null) return anchor.Error;
 
+        var listen = await ResolveListenUrlAsync(request.ListenUrl);
+        if (listen.Error is not null) return listen.Error;
+
         note.Text = text;
         note.VibeColor = NormalizeText(request.VibeColor);
         note.VibeEmoji = NormalizeText(request.VibeEmoji);
         note.VibeLabel = vibeLabel;
+        note.ListenUrl = listen.Url;
         note.AnchorArtistSpotifyId = anchor.SpotifyId;
         note.AnchorArtistName = anchor.Name;
         note.UpdatedAt = DateTime.UtcNow;
@@ -182,6 +191,34 @@ public class NotesController(
         return (item, null);
     }
 
+    // El "escúchalo aquí" solo puede ser de YouTube o SoundCloud, y el
+    // contenido tiene que existir (mismo oEmbed que los grupos locales)
+    private async Task<(string? Url, IActionResult? Error)> ResolveListenUrlAsync(string? rawUrl)
+    {
+        var url = NormalizeText(rawUrl);
+        if (url is null) return (null, null);
+
+        if (MediaLinkService.IsYoutubeUrl(url))
+        {
+            var info = await media.ResolveYoutubeAsync(url);
+            if (info is null)
+            {
+                return (null, NotFound(new { message = "Ese vídeo de YouTube no existe o no es público." }));
+            }
+            return (info.Url, null);
+        }
+        if (MediaLinkService.IsSoundcloudUrl(url))
+        {
+            var info = await media.ResolveSoundcloudAsync(url);
+            if (info is null)
+            {
+                return (null, NotFound(new { message = "Ese audio de SoundCloud no existe o no es público." }));
+            }
+            return (info.Url, null);
+        }
+        return (null, BadRequest(new { message = "El enlace de escucha debe ser de YouTube o SoundCloud." }));
+    }
+
     // El ancla "si te gusta X" se valida contra Spotify y guardamos su
     // nombre canónico; ancla vacía = nota sin recomendación dirigida
     private async Task<(string? SpotifyId, string? Name, IActionResult? Error)> ResolveAnchorAsync(
@@ -241,6 +278,7 @@ public class NotesController(
         n.VibeColor,
         n.VibeEmoji,
         n.VibeLabel,
+        n.ListenUrl,
         n.AnchorArtistSpotifyId,
         n.AnchorArtistName,
         n.CreatedAt,

@@ -424,6 +424,20 @@ h1 {
   height: 166px;
 }
 
+/* El embed de Spotify: compacto para canciones, con tracklist para
+   álbumes y artistas */
+.embed-wrap.spotify iframe {
+  height: 152px;
+}
+
+.embed-wrap.spotify-full iframe {
+  height: 352px;
+}
+
+.listen-field {
+  margin-top: 0.8rem;
+}
+
 /* ---- Ancla de recomendación (formulario) ---- */
 .anchor-picker {
   margin-top: 0.8rem;

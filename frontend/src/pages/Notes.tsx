@@ -30,6 +30,8 @@ export default function Notes() {
   const [vibeColor, setVibeColor] = useState<string | null>(null);
   const [vibeEmoji, setVibeEmoji] = useState<string | null>(null);
   const [vibeLabel, setVibeLabel] = useState("");
+  // "Escúchalo aquí": enlace opcional al audio exacto del que habla la nota
+  const [listenUrl, setListenUrl] = useState("");
   // El ancla "si te gusta X": convierte la nota en recomendación dirigida
   const [anchor, setAnchor] = useState<{ id: string; name: string } | null>(null);
   const [anchorQuery, setAnchorQuery] = useState("");
@@ -95,6 +97,7 @@ export default function Notes() {
     setVibeColor(null);
     setVibeEmoji(null);
     setVibeLabel("");
+    setListenUrl("");
     setAnchor(null);
     setAnchorQuery("");
     setAnchorOptions([]);
@@ -112,6 +115,7 @@ export default function Notes() {
     setVibeColor(note.vibeColor);
     setVibeEmoji(note.vibeEmoji);
     setVibeLabel(note.vibeLabel ?? "");
+    setListenUrl(note.listenUrl ?? "");
     if (note.anchorArtistSpotifyId && note.anchorArtistName) {
       setAnchor({ id: note.anchorArtistSpotifyId, name: note.anchorArtistName });
     }
@@ -160,7 +164,14 @@ export default function Notes() {
     if (!draft) return;
     setSaving(true);
     setError("");
-    const body = { text, vibeColor, vibeEmoji, vibeLabel, anchorArtistId: anchor?.id ?? null };
+    const body = {
+      text,
+      vibeColor,
+      vibeEmoji,
+      vibeLabel,
+      listenUrl,
+      anchorArtistId: anchor?.id ?? null,
+    };
     try {
       if (draft.noteId) {
         await api.put(`/api/notes/${draft.noteId}`, body);
@@ -246,6 +257,17 @@ export default function Notes() {
               maxLength={40}
               value={vibeLabel}
               onChange={(e) => setVibeLabel(e.target.value)}
+            />
+          </div>
+          {/* El audio exacto del que habla la nota: la versión en directo,
+              el set, el tema que no está en Spotify... */}
+          <div className="listen-field">
+            <input
+              type="url"
+              placeholder="Escúchalo aquí: enlace de YouTube o SoundCloud (opcional)"
+              maxLength={300}
+              value={listenUrl}
+              onChange={(e) => setListenUrl(e.target.value)}
             />
           </div>
           {/* El ancla convierte la nota en recomendación dirigida: le

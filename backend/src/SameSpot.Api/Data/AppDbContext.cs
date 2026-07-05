@@ -120,6 +120,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasMaxLength(40);
 
         modelBuilder.Entity<Note>()
+            .Property(n => n.ListenUrl)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<Note>()
             .Property(n => n.AnchorArtistSpotifyId)
             .HasMaxLength(50);
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Note, MusicItem, NoteAuthor } from "../types";
-import { soundcloudEmbedUrl, youtubeEmbedUrl } from "./PlatformPlayer";
+import { soundcloudEmbedUrl, spotifyEmbedUrl, youtubeEmbedUrl } from "./PlatformPlayer";
 
 interface Props {
   note: Note;
@@ -24,9 +24,19 @@ const TYPE_LABEL: Record<MusicItem["type"], string> = {
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño: esto es contexto, no un tablón de reseñas
 export default function NoteCard({ note, author, actions, because, becauseLocal }: Props) {
-  // El player embebido se monta solo al pulsar: el feed no carga iframes
-  const [playing, setPlaying] = useState<"youtube" | "soundcloud" | null>(null);
-  const youtubeEmbed = note.item.youtubeUrl ? youtubeEmbedUrl(note.item.youtubeUrl) : null;
+  // El player embebido se monta solo al pulsar: el feed no carga iframes.
+  // El "escúchalo aquí" de la nota manda sobre el enlace del item: apunta
+  // al audio exacto del que habla (la versión en directo, el set...)
+  const [playing, setPlaying] = useState<"youtube" | "soundcloud" | "spotify" | null>(null);
+  const noteYoutube = note.listenUrl ? youtubeEmbedUrl(note.listenUrl) : null;
+  const youtubeEmbed = noteYoutube
+    ?? (note.item.youtubeUrl ? youtubeEmbedUrl(note.item.youtubeUrl) : null);
+  const soundcloudUrl = note.listenUrl?.includes("soundcloud.com")
+    ? note.listenUrl
+    : note.item.soundcloudUrl;
+  const spotifyEmbed = note.item.spotifyId
+    ? spotifyEmbedUrl(note.item.type, note.item.spotifyId)
+    : null;
 
   return (
     <li className="note-card">
@@ -99,8 +109,17 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
           </p>
           {/* La música que no está en Spotify se escucha aquí dentro,
               sin sacar a nadie del feed */}
-          {(youtubeEmbed || note.item.soundcloudUrl) && (
+          {(youtubeEmbed || soundcloudUrl || spotifyEmbed) && (
             <p className="platform-actions">
+              {spotifyEmbed && (
+                <button
+                  type="button"
+                  className="btn-platform"
+                  onClick={() => setPlaying(playing === "spotify" ? null : "spotify")}
+                >
+                  {playing === "spotify" ? "✕ Cerrar" : "▶ Escuchar"}
+                </button>
+              )}
               {youtubeEmbed && (
                 <button
                   type="button"
@@ -110,7 +129,7 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
                   {playing === "youtube" ? "✕ Cerrar vídeo" : "▶ Ver en YouTube"}
                 </button>
               )}
-              {note.item.soundcloudUrl && (
+              {soundcloudUrl && (
                 <button
                   type="button"
                   className="btn-platform"
@@ -128,6 +147,11 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
         </div>
         {actions && <div className="note-actions">{actions}</div>}
       </div>
+      {playing === "spotify" && spotifyEmbed && (
+        <div className={`embed-wrap ${note.item.type === "track" ? "spotify" : "spotify-full"}`}>
+          <iframe src={spotifyEmbed} title={`Spotify: ${note.item.name}`} allow="encrypted-media" />
+        </div>
+      )}
       {playing === "youtube" && youtubeEmbed && (
         <div className="embed-wrap video">
           <iframe
@@ -138,10 +162,10 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
           />
         </div>
       )}
-      {playing === "soundcloud" && note.item.soundcloudUrl && (
+      {playing === "soundcloud" && soundcloudUrl && (
         <div className="embed-wrap audio">
           <iframe
-            src={soundcloudEmbedUrl(note.item.soundcloudUrl)}
+            src={soundcloudEmbedUrl(soundcloudUrl)}
             title={`Audio de ${note.item.name}`}
             allow="encrypted-media"
           />
