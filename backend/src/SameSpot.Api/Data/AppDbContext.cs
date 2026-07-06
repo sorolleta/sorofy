@@ -15,6 +15,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Discovery> Discoveries => Set<Discovery>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<NoteLike> NoteLikes => Set<NoteLike>();
+    public DbSet<NoteComment> NoteComments => Set<NoteComment>();
+    public DbSet<CommentLike> CommentLikes => Set<CommentLike>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -207,6 +210,66 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasMany(u => u.Tags)
             .WithMany()
             .UsingEntity("UserTags");
+
+        // Un "me llega" por usuario y nota: clave compuesta
+        modelBuilder.Entity<NoteLike>()
+            .HasKey(l => new { l.NoteId, l.UserId });
+
+        modelBuilder.Entity<NoteLike>()
+            .HasOne(l => l.Note)
+            .WithMany()
+            .HasForeignKey(l => l.NoteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<NoteLike>()
+            .HasOne(l => l.User)
+            .WithMany()
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<NoteComment>()
+            .Property(c => c.Text)
+            .HasMaxLength(1000);
+
+        // El hilo de una nota se lee entero y en orden
+        modelBuilder.Entity<NoteComment>()
+            .HasIndex(c => new { c.NoteId, c.CreatedAt });
+
+        modelBuilder.Entity<NoteComment>()
+            .HasOne(c => c.Note)
+            .WithMany()
+            .HasForeignKey(c => c.NoteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<NoteComment>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Borrar un comentario raíz se lleva sus respuestas
+        modelBuilder.Entity<NoteComment>()
+            .HasOne(c => c.ParentComment)
+            .WithMany()
+            .HasForeignKey(c => c.ParentCommentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CommentLike>()
+            .HasKey(l => new { l.CommentId, l.UserId });
+
+        modelBuilder.Entity<CommentLike>()
+            .HasOne(l => l.Comment)
+            .WithMany()
+            .HasForeignKey(l => l.CommentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Si el usuario se borra, sus likes se van con él (Postgres admite
+        // rutas de cascada múltiples sin problema, no hace falta evitarlas)
+        modelBuilder.Entity<CommentLike>()
+            .HasOne(l => l.User)
+            .WithMany()
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Catálogo inicial de tags estéticos (ids fijos para el seed)
         modelBuilder.Entity<Tag>().HasData(

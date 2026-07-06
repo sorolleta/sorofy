@@ -23,6 +23,24 @@ namespace SameSpot.Api.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SameSpot.Api.Models.CommentLike", b =>
+                {
+                    b.Property<Guid>("CommentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("CommentId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CommentLikes");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Discovery", b =>
                 {
                     b.Property<Guid>("Id")
@@ -220,6 +238,58 @@ namespace SameSpot.Api.Data.Migrations
                     b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("Notes");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.NoteComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("NoteId", "CreatedAt");
+
+                    b.ToTable("NoteComments");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.NoteLike", b =>
+                {
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("NoteId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("NoteLikes");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.SpotifyToken", b =>
@@ -471,6 +541,25 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("UserTags");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.CommentLike", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.NoteComment", "Comment")
+                        .WithMany()
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Discovery", b =>
                 {
                     b.HasOne("SameSpot.Api.Models.User", "Author")
@@ -558,6 +647,51 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("MusicItem");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.NoteComment", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.Note", "Note")
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.NoteComment", "ParentComment")
+                        .WithMany()
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Note");
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.NoteLike", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.Note", "Note")
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Note");
 
                     b.Navigation("User");
                 });
