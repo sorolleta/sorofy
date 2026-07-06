@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { FeedEntry, FeedItem } from "../types";
+import type { FeedEntry, FeedItem, NoteInteractions } from "../types";
 import NoteCard from "../components/NoteCard";
+import { loadInteractions } from "../components/NoteInteractionsBar";
 
 export default function Feed() {
   const [entries, setEntries] = useState<FeedEntry[]>([]);
   const [listening, setListening] = useState<FeedItem[]>([]);
   const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
+  const [interactions, setInteractions] = useState<Map<string, NoteInteractions>>(new Map());
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,6 +19,7 @@ export default function Feed() {
     api.get<FeedEntry[]>("/api/feed").then((f) => {
       setEntries(f);
       setLoaded(true);
+      loadInteractions(f.map((e) => e.note.id)).then(setInteractions).catch(() => {});
     });
     api.get<string[]>("/api/discoveries/mine").then((ids) => setSavedItems(new Set(ids)));
 
@@ -86,6 +89,7 @@ export default function Feed() {
               actions={saveAction(entry)}
               because={entry.becauseArtist}
               becauseLocal={entry.becauseProvince}
+              interactions={interactions.get(entry.note.id)}
             />
           ))}
         </ul>

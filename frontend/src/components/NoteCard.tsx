@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import type { Note, MusicItem, NoteAuthor } from "../types";
+import type { Note, MusicItem, NoteAuthor, NoteInteractions } from "../types";
+import NoteInteractionsBar from "./NoteInteractionsBar";
 import { soundcloudEmbedUrl, spotifyEmbedUrl, youtubeEmbedUrl } from "./PlatformPlayer";
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
   because?: string | null;
   // Si es un grupo de la provincia del lector, cuál
   becauseLocal?: string | null;
+  // Estado de "me llega" y conversación, cargado por lotes en cada página
+  interactions?: NoteInteractions;
 }
 
 const TYPE_LABEL: Record<MusicItem["type"], string> = {
@@ -23,7 +26,7 @@ const TYPE_LABEL: Record<MusicItem["type"], string> = {
 
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño: esto es contexto, no un tablón de reseñas
-export default function NoteCard({ note, author, actions, because, becauseLocal }: Props) {
+export default function NoteCard({ note, author, actions, because, becauseLocal, interactions }: Props) {
   // El player embebido se monta solo al pulsar: el feed no carga iframes.
   // El "escúchalo aquí" de la nota manda sobre el enlace del item: apunta
   // al audio exacto del que habla (la versión en directo, el set...)
@@ -144,6 +147,7 @@ export default function NoteCard({ note, author, actions, because, becauseLocal 
             {new Date(note.createdAt).toLocaleDateString()}
             {note.updatedAt && " · editada"}
           </p>
+          {interactions && <NoteInteractionsBar noteId={note.id} interactions={interactions} />}
         </div>
         {actions && <div className="note-actions">{actions}</div>}
       </div>

@@ -735,3 +735,92 @@ h1 {
 .chat-time {
   flex-shrink: 0;
 }
+
+/* ---- Me llega y comentarios ---- */
+.interactions-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+}
+
+.interactions-bar .btn-link {
+  margin-left: 0;
+}
+
+.interactions-bar .liked,
+.comment-meta .liked {
+  color: var(--accent);
+}
+
+/* La señal íntima del autor: a quién le llega su nota */
+.note-llega {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.comments-panel {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-left: 2px solid #2a2a2a;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comment {
+  margin-bottom: 0.5rem;
+}
+
+.comment-reply {
+  margin-left: 1.4rem;
+}
+
+.comment-text {
+  margin: 0;
+}
+
+.comment-meta {
+  display: flex;
+  gap: 0.8rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+}
+
+.comment-meta .btn-link {
+  margin-left: 0;
+  font-size: 0.8rem;
+}
+
+.comment-llega {
+  color: var(--accent);
+}
+
+.comment-replying {
+  margin: 0.4rem 0 0;
+}
+
+.comment-replying .btn-link {
+  margin-left: 0.4rem;
+}
+
+.comment-form {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.comment-form input {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+}

@@ -154,6 +154,31 @@ export interface Note {
   updatedAt: string | null;
 }
 
+// Estado de lector de una nota: si la marqué, si tiene conversación y,
+// SOLO en mis notas, a quién le llega (null en las ajenas: es privado)
+export interface NoteInteractions {
+  noteId: string;
+  likedByMe: boolean;
+  hasComments: boolean;
+  likedBy: string[] | null;
+}
+
+// Un comentario del hilo; likeCount solo viaja en los comentarios propios
+export interface NoteCommentData {
+  id: string;
+  author: NoteAuthor;
+  text: string;
+  createdAt: string;
+  likedByMe: boolean;
+  likeCount: number | null;
+}
+
+// Hilo de un solo nivel: raíces con sus respuestas colgando
+export interface CommentThread {
+  root: NoteCommentData;
+  replies: NoteCommentData[];
+}
+
 export interface LocalGroup {
   id: string;
   name: string;

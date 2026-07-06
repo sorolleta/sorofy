@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
-import type { MusicItemDetail as Detail } from "../types";
+import type { MusicItemDetail as Detail, NoteInteractions } from "../types";
 import NoteCard from "../components/NoteCard";
+import { loadInteractions } from "../components/NoteInteractionsBar";
 import PlatformPlayer from "../components/PlatformPlayer";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -19,6 +20,7 @@ export default function MusicItemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [interactions, setInteractions] = useState<Map<string, NoteInteractions>>(new Map());
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -26,7 +28,10 @@ export default function MusicItemDetail() {
     setError("");
     api
       .get<Detail>(`/api/music-items/${id}`)
-      .then(setDetail)
+      .then((d) => {
+        setDetail(d);
+        loadInteractions(d.notes.map((n) => n.note.id)).then(setInteractions).catch(() => {});
+      })
       .catch(() => setError("Este item no existe o no se pudo cargar"));
   }, [id]);
 
@@ -92,7 +97,12 @@ export default function MusicItemDetail() {
         ) : (
           <ul className="note-list">
             {notes.map((entry) => (
-              <NoteCard key={entry.note.id} note={entry.note} author={entry.author} />
+              <NoteCard
+                key={entry.note.id}
+                note={entry.note}
+                author={entry.author}
+                interactions={interactions.get(entry.note.id)}
+              />
             ))}
           </ul>
         )}
