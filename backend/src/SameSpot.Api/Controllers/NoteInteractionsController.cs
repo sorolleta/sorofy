@@ -68,15 +68,18 @@ public class NoteInteractionsController(
         var myId = User.GetUserId();
         var likedByMe = (await likes.GetLikedNoteIdsAsync(myId, noteIds)).ToHashSet();
         var withComments = (await comments.GetNoteIdsWithCommentsAsync(noteIds)).ToHashSet();
+        var myNoteIds = (await notes.GetIdsOwnedByAsync(myId, noteIds)).ToHashSet();
         var myNotesLikes = (await likes.GetForAuthorNotesAsync(myId, noteIds))
             .ToLookup(l => l.NoteId);
 
+        // likedBy solo viaja en las notas del que consulta (lista vacía si
+        // aún no le llega a nadie); null = nota ajena, señal privada
         return Ok(noteIds.Select(id => new
         {
             NoteId = id,
             LikedByMe = likedByMe.Contains(id),
             HasComments = withComments.Contains(id),
-            LikedBy = myNotesLikes.Contains(id)
+            LikedBy = myNoteIds.Contains(id)
                 ? myNotesLikes[id].Select(l => l.User.DisplayName).ToList()
                 : null,
         }));

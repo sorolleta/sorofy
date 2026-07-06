@@ -64,6 +64,13 @@ public class NoteRepository(AppDbContext db) : INoteRepository
             .Take(limit)
             .ToListAsync();
 
+    // De estas notas, cuáles son del usuario (para saber en qué tarjetas
+    // puede ver su señal íntima de "me llega")
+    public Task<List<Guid>> GetIdsOwnedByAsync(Guid userId, List<Guid> noteIds) =>
+        db.Notes.Where(n => noteIds.Contains(n.Id) && n.UserId == userId)
+            .Select(n => n.Id)
+            .ToListAsync();
+
     public Task AddAsync(Note note) => db.Notes.AddAsync(note).AsTask();
 
     public void Remove(Note note) => db.Notes.Remove(note);
