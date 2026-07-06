@@ -74,24 +74,26 @@ export default function ChatThread() {
   return (
     <div className="chat">
       <header className="chat-header">
-        <Link to="/chats">←</Link>
+        <Link to="/chats" className="back-link">←</Link>
         {partner?.avatarUrl ? (
-          <img className="avatar avatar-sm" src={partner.avatarUrl} alt="" />
+          <img className="note-avatar" src={partner.avatarUrl} alt="" />
         ) : (
-          <div className="avatar avatar-sm avatar-placeholder">♪</div>
+          <span className="note-avatar avatar-placeholder">
+            {partner?.displayName[0]?.toUpperCase() ?? "♪"}
+          </span>
         )}
         <strong>{partner?.displayName ?? "…"}</strong>
         {!connected && <span className="muted">conectando…</span>}
       </header>
 
-      <div className="chat-messages">
+      <div className="chat-messages bubbles">
         {messages.length === 0 && (
-          <p className="muted">Aún no hay mensajes. ¡Rompe el hielo!</p>
+          <p className="empty-state">Aún no hay mensajes. ¡Rompe el hielo!</p>
         )}
         {messages.map((message) => (
           <div
             key={message.id}
-            className={message.senderId === myId ? "bubble bubble-mine" : "bubble"}
+            className={message.senderId === myId ? "bubble bubble-mine" : "bubble bubble-theirs"}
           >
             <p>{message.text}</p>
             <span className="bubble-time">
@@ -105,7 +107,7 @@ export default function ChatThread() {
         <div ref={bottomRef} />
       </div>
 
-      <form className="chat-input" onSubmit={send}>
+      <form className="chat-input-row" onSubmit={send}>
         <input
           type="text"
           placeholder="Escribe un mensaje…"
@@ -113,8 +115,13 @@ export default function ChatThread() {
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <button className="btn" type="submit" disabled={!connected || !text.trim()}>
-          Enviar
+        <button
+          className="chat-send"
+          type="submit"
+          aria-label="Enviar"
+          disabled={!connected || !text.trim()}
+        >
+          ↑
         </button>
       </form>
       {error && partner && <p className="error">{error}</p>}

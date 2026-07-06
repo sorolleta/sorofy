@@ -36,7 +36,14 @@ export default function MusicItemDetail() {
   }, [id]);
 
   if (error) return <p className="error">{error}</p>;
-  if (!detail) return <p>Cargando…</p>;
+  if (!detail) {
+    return (
+      <div className="loading-state">
+        <span className="spinner" />
+        Cargando…
+      </div>
+    );
+  }
 
   const { item, notes } = detail;
 
@@ -58,24 +65,30 @@ export default function MusicItemDetail() {
 
   return (
     <>
-      <header className="profile-header">
+      <header className="album-head">
         {item.imageUrl ? (
-          <img className="cover cover-lg" src={item.imageUrl} alt="" />
+          <img
+            className={`album-cover-lg${item.type === "artist" ? " is-round" : ""}`}
+            src={item.imageUrl}
+            alt=""
+          />
         ) : (
-          <div className="cover cover-lg cover-placeholder">♪</div>
+          <span className="album-cover-lg cover-placeholder">
+            {item.type === "localGroup" ? "🎪" : "♪"}
+          </span>
         )}
-        <div>
-          <h1>{item.name}</h1>
-          <p className="muted">
-            {item.artistName && `${item.artistName} · `}
+        <div className="album-head-info">
+          <span className="card-kicker">
             {item.type === "localGroup"
               ? (item.category ?? TYPE_LABEL.localGroup).toLowerCase()
               : TYPE_LABEL[item.type]}
             {item.province && ` · ${item.province}`}
-          </p>
-          {item.description && <p>{item.description}</p>}
+          </span>
+          <h1 className="album-title">{item.name}</h1>
+          {item.artistName && <p className="album-facts">{item.artistName}</p>}
+          {item.description && <p className="section-sub">{item.description}</p>}
           <div className="profile-actions">
-            <button className="btn" onClick={writeNote}>
+            <button className="btn btn-primary btn-sm" onClick={writeNote}>
               Escribir una nota
             </button>
           </div>
@@ -90,23 +103,23 @@ export default function MusicItemDetail() {
         title={item.name}
       />
 
-      <section>
-        <h2>Lo que dice la gente</h2>
-        {notes.length === 0 ? (
-          <p className="muted">Nadie ha escrito todavía sobre esto. Sé la primera persona.</p>
-        ) : (
-          <ul className="note-list">
-            {notes.map((entry) => (
-              <NoteCard
-                key={entry.note.id}
-                note={entry.note}
-                author={entry.author}
-                interactions={interactions.get(entry.note.id)}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="page-head">
+        <h2 className="section-title">Lo que dice la gente</h2>
+      </div>
+      {notes.length === 0 ? (
+        <p className="empty-state">Nadie ha escrito todavía sobre esto. Sé la primera persona.</p>
+      ) : (
+        <ul className="note-list">
+          {notes.map((entry) => (
+            <NoteCard
+              key={entry.note.id}
+              note={entry.note}
+              author={entry.author}
+              interactions={interactions.get(entry.note.id)}
+            />
+          ))}
+        </ul>
+      )}
     </>
   );
 }

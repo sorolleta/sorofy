@@ -20,6 +20,8 @@ export interface MyProfile {
   topArtists: TopArtist[];
   topTracks: TopTrack[];
   lastSync: string | null;
+  province: string | null;
+  tags: string[];
 }
 
 export interface UserSummary {

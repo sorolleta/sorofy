@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
-import type { MyProfile, NowPlaying, Note } from "../types";
+import { api, getMyUserId } from "../api";
+import type { MyProfile, NowPlaying, Note, UserProfile } from "../types";
 import TopsPanel from "../components/TopsPanel";
 import NoteList from "../components/NoteList";
 
@@ -9,6 +9,9 @@ export default function Profile() {
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
+  // El contador de confianza sale del perfil público: cuántas canciones
+  // guardó la gente gracias a tus notas
+  const [trustCount, setTrustCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,6 +19,10 @@ export default function Profile() {
     api.get<MyProfile>("/api/me").then(setProfile).catch(() => setError("No se pudo cargar el perfil"));
     api.get<NowPlaying>("/api/me/now-playing").then(setNowPlaying).catch(() => {});
     api.get<Note[]>("/api/notes/mine").then(setNotes).catch(() => {});
+    const myId = getMyUserId();
+    if (myId) {
+      api.get<UserProfile>(`/api/users/${myId}`).then((u) => setTrustCount(u.trustCount)).catch(() => {});
+    }
   };
 
   useEffect(load, []);
@@ -33,38 +40,74 @@ export default function Profile() {
   };
 
   if (error) return <p className="error">{error}</p>;
-  if (!profile) return <p>Cargando…</p>;
+  if (!profile) {
+    return (
+      <div className="loading-state">
+        <span className="spinner" />
+        Cargando…
+      </div>
+    );
+  }
 
   return (
     <>
-      <header className="profile-header">
-        {profile.avatarUrl && <img className="avatar" src={profile.avatarUrl} alt="" />}
+      <header className="profile-head profile-head-halo">
+        {profile.avatarUrl ? (
+          <img className="profile-avatar-xl" src={profile.avatarUrl} alt="" />
+        ) : (
+          <span className="profile-avatar-xl avatar-placeholder">
+            {profile.displayName[0]?.toUpperCase() ?? "♪"}
+          </span>
+        )}
         <div>
-          <h1>{profile.displayName}</h1>
-          {nowPlaying?.playing && (
-            <p className="now-playing">
-              ♪ Escuchando ahora: <strong>{nowPlaying.track}</strong> — {nowPlaying.artist}
-            </p>
-          )}
-          <p className="muted">
+          <h1 className="profile-name profile-name-xl">{profile.displayName}</h1>
+          <p className="profile-sub">
+            {profile.province ? `${profile.province} · ` : ""}
             {profile.lastSync
-              ? `Última sincronización: ${new Date(profile.lastSync).toLocaleString()}`
-              : "Aún no has importado tu música."}
+              ? `última sincronización ${new Date(profile.lastSync).toLocaleDateString()}`
+              : "aún no has importado tu música"}
           </p>
-          <button className="btn" onClick={sync} disabled={syncing}>
+        </div>
+        {profile.tags.length > 0 && (
+          <div className="profile-tags">
+            {profile.tags.map((tag) => (
+              <span key={tag} className="tag-chip tag-chip-static">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        {nowPlaying?.playing && (
+          <div className="now-playing quiet">
+            <span className="dot" />♪ Sonando ahora · {nowPlaying.track} — {nowPlaying.artist}
+          </div>
+        )}
+        <div className="profile-actions">
+          <button className="btn btn-quiet btn-sm" onClick={sync} disabled={syncing}>
             {syncing ? "Sincronizando…" : "Sincronizar con Spotify"}
           </button>
         </div>
       </header>
+
+      {trustCount > 0 && (
+        <div className="trust-box">
+          <span className="trust-num">{trustCount}</span>
+          <span className="trust-label">
+            {trustCount === 1 ? "canción guardada" : "canciones guardadas"} por otros gracias a
+            tus notas. Tu única métrica — y es un regalo.
+          </span>
+        </div>
+      )}
+
       <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
 
-      <section>
-        <h2>Mi bitácora</h2>
-        <NoteList notes={notes} />
-        <p className="muted">
-          Las notas se escriben y editan desde <Link to="/notas">Notas</Link>.
+      <div className="page-head">
+        <h2 className="section-title">Mi bitácora</h2>
+        <p className="section-sub">
+          Las notas se escriben y editan desde <Link to="/notas" className="accent">Notas</Link>.
         </p>
-      </section>
+      </div>
+      <NoteList notes={notes} />
     </>
   );
 }

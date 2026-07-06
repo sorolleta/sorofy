@@ -48,55 +48,64 @@ export default function Onboarding() {
   const ready = tagIds.length >= 3 && province !== "";
 
   return (
-    <main className="container onboarding">
-      <h1>Bienvenido a Sorofy</h1>
-      <p>
-        Antes de empezar, cuéntanos qué te mueve. Con esto preparamos tu
-        primer feed: nada de rankings, música elegida para ti.
-      </p>
+    <main className="app-col onboarding">
+      <div className="onboarding-head">
+        <h1 className="section-title onboarding-title">Bienvenido a Sorofy</h1>
+        <p className="section-sub">
+          Elige de 3 a 4 sensibilidades. No son géneros: son maneras de
+          escuchar. Solo las verás tú.
+        </p>
+      </div>
 
-      {!options && !error && <p className="muted">Cargando…</p>}
+      {!options && !error && (
+        <div className="loading-state">
+          <span className="spinner" />
+          Cargando…
+        </div>
+      )}
       {!options && error && <p className="error">{error}</p>}
 
       {options && (
         <>
-          <h2>
-            Elige 3 o 4 sensibilidades{" "}
-            <span className="muted">({tagIds.length}/4)</span>
-          </h2>
-          <div className="tag-grid">
-            {options.tags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                className={`tag-chip${tagIds.includes(tag.id) ? " selected" : ""}`}
-                onClick={() => toggleTag(tag.id)}
-              >
-                {tag.name}
-              </button>
-            ))}
+          <div className="onboarding-tags">
+            <span className="tag-count">{tagIds.length}/4 elegidas</span>
+            <div className="tag-grid">
+              {options.tags.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  className={`tag-chip${tagIds.includes(tag.id) ? " is-selected" : ""}`}
+                  onClick={() => toggleTag(tag.id)}
+                >
+                  {tag.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <h2>¿Desde dónde escuchas?</h2>
-          <p className="muted">
-            Tu provincia nos sirve para acercarte la música local: charangas,
-            grupos de tu zona…
+          <div className="field">
+            <label htmlFor="provincia">Tu provincia (para los grupos locales)</label>
+            <select
+              id="provincia"
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+            >
+              <option value="">Elige tu provincia…</option>
+              {options.provinces.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button className="btn btn-primary" disabled={!ready || saving} onClick={save}>
+            {saving ? "Guardando…" : "Empezar a descubrir"}
+          </button>
+          <p className="section-sub onboarding-hint">
+            El botón se activa con 3 o 4 sensibilidades elegidas y tu provincia.
           </p>
-          <select value={province} onChange={(e) => setProvince(e.target.value)}>
-            <option value="">Elige tu provincia…</option>
-            {options.provinces.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-
-          <div className="note-form-actions">
-            <button className="btn" disabled={!ready || saving} onClick={save}>
-              {saving ? "Guardando…" : "Empezar a descubrir"}
-            </button>
-            {error && <span className="error">{error}</span>}
-          </div>
+          {error && <p className="error">{error}</p>}
         </>
       )}
     </main>

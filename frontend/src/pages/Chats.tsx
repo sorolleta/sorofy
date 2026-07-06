@@ -14,43 +14,54 @@ export default function Chats() {
     });
   }, []);
 
-  if (!loaded) return <p>Cargando…</p>;
+  if (!loaded) {
+    return (
+      <div className="loading-state">
+        <span className="spinner" />
+        Cargando…
+      </div>
+    );
+  }
   if (conversations.length === 0) {
     return (
-      <p className="muted">
+      <p className="empty-state">
         No tienes conversaciones. Abre el perfil de alguien en{" "}
-        <Link to="/gente">Gente</Link> y mándale un mensaje.
+        <Link to="/gente" className="accent">Gente</Link> y mándale un mensaje.
       </p>
     );
   }
 
   return (
     <>
-      <h1>Chats</h1>
-      <ul className="user-list">
+      <div className="page-head">
+        <h1 className="section-title">Chats</h1>
+      </div>
+      <div className="panel people-panel">
         {conversations.map((c) => (
-          <li key={c.userId} className="user-card">
+          <Link key={c.userId} to={`/chats/${c.userId}`} className="chat-row">
             {c.avatarUrl ? (
-              <img className="avatar avatar-sm" src={c.avatarUrl} alt="" />
+              <img className="person-avatar" src={c.avatarUrl} alt="" />
             ) : (
-              <div className="avatar avatar-sm avatar-placeholder">♪</div>
+              <span className="person-avatar avatar-placeholder">
+                {c.displayName[0]?.toUpperCase() ?? "♪"}
+              </span>
             )}
-            <div className="chat-preview">
-              <Link to={`/chats/${c.userId}`}>{c.displayName}</Link>
-              <p className="muted">
+            <span className="chat-preview">
+              <strong>{c.displayName}</strong>
+              <span>
                 {c.lastMessage.fromMe && "Tú: "}
                 {c.lastMessage.text}
-              </p>
-            </div>
-            <span className="muted chat-time">
+              </span>
+            </span>
+            <span className="chat-time">
               {new Date(c.lastMessage.sentAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
             </span>
-          </li>
+          </Link>
         ))}
-      </ul>
+      </div>
     </>
   );
 }

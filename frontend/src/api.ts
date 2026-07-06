@@ -1,5 +1,7 @@
 // Cliente HTTP mínimo: añade el JWT a cada petición y expulsa al login si caduca.
 
+import type { MyProfile } from "./types";
+
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:5000";
 
 export function getToken(): string | null {
@@ -12,6 +14,15 @@ export function setToken(token: string) {
 
 export function clearToken() {
   localStorage.removeItem("token");
+  cachedMe = null;
+}
+
+// Cache de /api/me para la nav (nombre y avatar); se limpia al salir
+let cachedMe: MyProfile | null = null;
+
+export async function getMe(): Promise<MyProfile> {
+  cachedMe ??= await api.get<MyProfile>("/api/me");
+  return cachedMe;
 }
 
 export function loginUrl(): string {

@@ -35,5 +35,10 @@ export default function AuthCallback() {
     };
   }, [navigate]);
 
-  return <p className="container">Entrando…</p>;
+  return (
+    <div className="loading-state">
+      <span className="spinner" />
+      Entrando…
+    </div>
+  );
 }

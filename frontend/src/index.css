@@ -1,826 +1,441 @@
+/* ============================================================
+   SOROFY — diseño "Salvia" (portado de Sorofy App.dc.html)
+   Música contada por personas, no por algoritmos.
+   Tokens y componentes = bloque portable del prototipo.
+   Al final, la capa "Adaptación a la app" cubre lo que el
+   prototipo maquetaba y aquí es real (iframes, avatares, chat).
+   ============================================================ */
+
 :root {
-  --bg: #121212;
-  --surface: #1e1e1e;
-  --text: #eaeaea;
-  --muted: #9a9a9a;
-  --accent: #1db954;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* --- Color base (neutra, para que los vibes canten) --- */
+  --bg: #121212;            /* fondo de la app */
+  --surface: #1d1d1c;       /* tarjetas y paneles */
+  --surface-2: #262624;     /* elevado sobre surface: inputs, chips inactivos, burbujas ajenas */
+  --text: #eaeaea;          /* texto principal (la nota) */
+  --muted: #909088;         /* metadatos, susurros. AA sobre --surface */
+  --muted-2: #6a6a63;       /* fechas, lo más tenue (solo decorativo) */
+  --line: rgba(234,234,234,0.08); /* separadores hairline */
+
+  /* --- Acento de marca (salvia) --- */
+  --accent: #a8c8a0;        /* acciones, foco, dedicatorias personales */
+  --accent-ink: #1c2a1a;    /* texto sobre fondo --accent */
+  --accent-soft: rgba(168,200,160,0.12); /* fondos de estado guardado/seleccionado */
+
+  /* --- Feedback --- */
+  --danger: #e0938a;        /* errores en línea, rojo suave (AA sobre --surface) */
+  --danger-soft: rgba(224,147,138,0.12);
+
+  /* --- Vibes: 6 colores vivos que elige el usuario.
+     La paleta ejecutable vive en src/vibes.ts (el dato llega
+     como hex desde la BD); estos tokens la documentan. --- */
+  --vibe-naranja: #f5a623;  --vibe-naranja-ink: #3a2a08;
+  --vibe-azul:    #6fa8ff;  --vibe-azul-ink:    #0d1e3d;
+  --vibe-lila:    #d98fe0;  --vibe-lila-ink:    #331039;
+  --vibe-coral:   #ff8a70;  --vibe-coral-ink:   #3d150b;
+  --vibe-verde:   #7fd482;  --vibe-verde-ink:   #103417;
+  --vibe-amarillo:#efd35d;  --vibe-amarillo-ink:#3a3208;
+
+  /* --- Espaciado --- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 40px;
+
+  /* --- Radios --- */
+  --r-s: 8px; --r-m: 12px; --r-pill: 999px;
+
+  /* --- Tipografía (una familia; la calma la da la escala) --- */
+  --font-ui: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+  --fs-note: 1.15rem;   /* texto de nota: el protagonista */
+  --fs-note-xl: 1.5rem; /* nota en exhibición */
+  --fs-body: 0.875rem;  /* UI general */
+  --fs-meta: 0.8rem;    /* metadatos: susurros */
+
   color-scheme: dark;
 }
 
-* {
-  box-sizing: border-box;
+/* --- Base --- */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+button, select, input, textarea { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-s); }
+h1, h2, h3, p { margin: 0; }
+a { color: var(--text); text-decoration: none; }
+a:hover { color: var(--accent); }
+
+/* --- .btn --- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); border: none; cursor: pointer; border-radius: var(--r-pill); font-size: var(--fs-body); font-weight: 600; padding: 12px 22px; min-height: 44px; transition: background .15s ease, color .15s ease, opacity .15s ease; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { background: #b9d6b2; color: var(--accent-ink); }
+.btn-primary:disabled { background: var(--surface-2); color: var(--muted-2); cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--accent); border: 1px solid rgba(168,200,160,0.4); }
+.btn-ghost:hover { background: var(--accent-soft); }
+.btn-quiet { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.btn-quiet:hover { color: var(--text); border-color: rgba(234,234,234,0.2); }
+.btn-sm { padding: 7px 15px; min-height: 34px; font-size: 0.8rem; }
+.btn-save.is-saved { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.btn-follow.is-following { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.btn-danger-quiet { background: transparent; color: var(--danger); border: 1px solid transparent; }
+.btn-danger-quiet:hover { background: var(--danger-soft); }
+.btn-danger-quiet.is-arming { background: var(--danger-soft); border-color: rgba(224,147,138,0.4); }
+
+/* --- .nav: barra superior de la app --- */
+.nav { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: rgba(18,18,18,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.nav-logo { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
+.nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#556b52,#38473a); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
+
+/* --- .now-playing: franja discreta --- */
+.now-playing { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); font-size: var(--fs-meta); color: var(--muted); border-bottom: 1px solid var(--line); }
+.now-playing .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; animation: sorofy-pulse 2.4s ease-in-out infinite; }
+@keyframes sorofy-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* --- .note-card: la unidad central --- */
+.note-card { background: var(--surface); border-radius: var(--r-m); padding: var(--sp-5); display: flex; flex-direction: column; gap: 14px; }
+.note-author { display: flex; align-items: center; gap: 10px; }
+.note-avatar { width: 26px; height: 26px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; color: var(--text); }
+.note-author-name { font-size: 0.85rem; font-weight: 600; color: #bdbdb6; }
+.note-text { font-size: var(--fs-note); line-height: 1.6; color: var(--text); text-wrap: pretty; white-space: pre-wrap; }
+/* La dedicatoria: por qué te llega esta nota. Íntima, no publicitaria. */
+.rec-line { font-size: var(--fs-meta); font-style: italic; }
+.rec-personal { color: var(--accent); }
+.rec-generic { color: var(--muted); }
+.note-meta { display: flex; align-items: center; gap: var(--sp-3); border-top: 1px solid var(--line); padding-top: 14px; }
+.note-cover { width: 56px; height: 56px; border-radius: var(--r-s); flex: none; }
+.note-track { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.note-track-title { font-size: var(--fs-meta); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-track-sub { display: flex; align-items: center; gap: var(--sp-2); }
+.note-track-date { font-size: 0.75rem; color: var(--muted-2); }
+.badge { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px 8px; }
+.note-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+
+/* --- .vibe-chip (el color y la tinta los pone vibes.ts en línea) --- */
+.vibe-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; border-radius: var(--r-pill); padding: 5px 12px; width: fit-content; }
+
+/* --- .tag-chip: sensibilidades --- */
+.tag-chip { background: var(--surface-2); color: var(--text); border: 1px solid transparent; border-radius: var(--r-pill); padding: 10px 14px; min-height: 44px; font-size: var(--fs-body); cursor: pointer; transition: background .15s ease, border-color .15s ease; text-align: center; }
+.tag-chip:hover { border-color: rgba(168,200,160,0.4); }
+.tag-chip.is-selected { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.tag-chip-static { cursor: default; min-height: 34px; padding: 6px 12px; font-size: var(--fs-meta); background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+/* --- .field: inputs --- */
+.field { display: flex; flex-direction: column; gap: var(--sp-2); }
+.field label { font-size: var(--fs-meta); color: var(--muted); }
+.field select, .field input[type="text"], .field textarea { appearance: none; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-s); padding: 12px 14px; min-height: 44px; font-size: var(--fs-body); box-sizing: border-box; width: 100%; }
+.field select { background: var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23909088' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 40px; }
+.field textarea { min-height: 120px; resize: vertical; font-size: var(--fs-note); line-height: 1.6; }
+.field ::placeholder { color: var(--muted-2); font-style: italic; }
+.field-error { font-size: var(--fs-meta); color: var(--danger); }
+.field.has-error select, .field.has-error input, .field.has-error textarea { border-color: rgba(224,147,138,0.5); }
+
+/* --- Buscador y resultados (pantalla Notas) --- */
+.search-cat { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); margin-top: var(--sp-3); }
+.result-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 0; }
+.result-cover { width: 40px; height: 40px; border-radius: var(--r-s); flex: none; }
+.result-cover.is-round { border-radius: 50%; }
+.result-name { flex: 1; min-width: 0; font-size: var(--fs-body); }
+.result-name small { display: block; color: var(--muted-2); font-size: 0.75rem; }
+
+/* --- Picker de vibe --- */
+.vibe-dots { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.vibe-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.vibe-dot.is-selected { border-color: var(--text); box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px var(--text); }
+.emoji-row { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+.emoji-pick { background: var(--surface-2); border: 1px solid transparent; border-radius: var(--r-s); font-size: 1.1rem; width: 40px; height: 40px; cursor: pointer; }
+.emoji-pick.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+
+/* --- Ancla de recomendación --- */
+.anchor-chip { display: inline-flex; align-items: center; gap: var(--sp-2); background: var(--accent-soft); color: var(--accent); border-radius: var(--r-pill); padding: 8px 8px 8px 14px; font-size: var(--fs-body); font-style: italic; width: fit-content; }
+.anchor-remove { background: transparent; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 600; font-style: normal; cursor: pointer; padding: 4px 8px; border-radius: var(--r-pill); }
+.anchor-remove:hover { background: rgba(168,200,160,0.15); }
+
+/* --- Gente --- */
+.person-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.person-row:last-child { border-bottom: none; }
+.person-avatar { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 600; }
+.person-name { flex: 1; min-width: 0; font-size: var(--fs-body); font-weight: 600; }
+.person-name small { display: block; font-weight: 400; color: var(--muted-2); font-size: 0.75rem; margin-top: 2px; }
+
+/* --- Perfil --- */
+.profile-head { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); text-align: center; padding: var(--sp-5) 0; }
+.profile-avatar { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 600; }
+.profile-name { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; }
+.profile-sub { font-size: var(--fs-meta); color: var(--muted); }
+.profile-tags { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }
+/* El contador de confianza: la única métrica, y es un regalo */
+.trust-box { background: var(--surface); border: 1px solid rgba(168,200,160,0.25); border-radius: var(--r-m); padding: var(--sp-5); display: flex; align-items: baseline; gap: var(--sp-3); }
+.trust-num { font-size: 2.4rem; font-weight: 600; color: var(--accent); line-height: 1; }
+.trust-label { font-size: var(--fs-body); color: var(--muted); line-height: 1.5; text-wrap: pretty; }
+.top-cols { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); }
+.top-list { background: var(--surface); border-radius: var(--r-m); padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
+.top-list h3 { font-size: var(--fs-meta); color: var(--muted); font-weight: 600; }
+.top-item { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-body); }
+.top-item .rank { color: var(--muted-2); font-size: 0.75rem; width: 14px; flex: none; }
+.top-item small { color: var(--muted-2); font-size: 0.75rem; }
+
+/* --- Chats --- */
+.chat-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.chat-row:last-child { border-bottom: none; }
+.chat-preview { flex: 1; min-width: 0; }
+.chat-preview strong { display: block; font-size: var(--fs-body); }
+.chat-preview span { display: block; font-size: var(--fs-meta); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.chat-time { font-size: 0.72rem; color: var(--muted-2); flex: none; align-self: flex-start; padding-top: 4px; }
+.bubbles { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4) 0; }
+.bubble { max-width: 78%; padding: 10px 14px; border-radius: 16px; font-size: var(--fs-body); line-height: 1.5; }
+.bubble-theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border-bottom-left-radius: 4px; }
+.bubble-mine { align-self: flex-end; background: var(--accent-soft); color: var(--text); border: 1px solid rgba(168,200,160,0.2); border-bottom-right-radius: 4px; }
+.bubble-time { font-size: 0.68rem; color: var(--muted-2); margin-top: 4px; }
+.chat-input-row { display: flex; gap: var(--sp-2); align-items: center; border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.chat-input-row input { flex: 1; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); padding: 12px 18px; min-height: 44px; font-size: var(--fs-body); box-sizing: border-box; }
+.chat-send { width: 44px; height: 44px; flex: none; border-radius: 50%; border: none; background: var(--accent); color: var(--accent-ink); font-size: 1rem; cursor: pointer; }
+
+/* --- Estados vacío / carga --- */
+.empty-state { text-align: center; color: var(--muted); font-size: var(--fs-body); line-height: 1.6; padding: var(--sp-6) var(--sp-4); text-wrap: pretty; }
+.loading-state { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); color: var(--muted-2); font-size: var(--fs-meta); padding: var(--sp-4); }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--muted); border-radius: 50%; animation: sorofy-spin 0.9s linear infinite; }
+@keyframes sorofy-spin { to { transform: rotate(360deg); } }
+
+/* --- Layouts --- */
+.app-col { max-width: 640px; margin: 0 auto; padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
+.screen-login { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-6); padding: var(--sp-6) var(--sp-4); text-align: center; }
+.login-logo { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; }
+.login-tagline { font-size: 1rem; line-height: 1.6; color: var(--muted); max-width: 320px; text-wrap: pretty; }
+.section-title { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+.section-sub { font-size: var(--fs-body); color: var(--muted); line-height: 1.6; text-wrap: pretty; }
+.tag-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+.tag-count { font-size: var(--fs-meta); color: var(--muted); }
+.panel { background: var(--surface); border-radius: var(--r-m); padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-4); }
+
+@media (min-width: 700px) {
+  .tag-grid { grid-template-columns: repeat(4, 1fr); }
+  .top-cols { grid-template-columns: 1fr 1fr; }
+  .app-col { padding: var(--sp-5) var(--sp-4); gap: var(--sp-5); }
+  .chats-layout { display: grid; grid-template-columns: 240px 1fr; gap: var(--sp-5); align-items: start; }
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-}
+/* --- Nav enriquecida: buscador + enlaces de sección --- */
+.nav-search { flex: 1; max-width: 360px; display: flex; align-items: center; gap: var(--sp-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 14px; color: var(--muted-2); font-size: var(--fs-meta); cursor: text; }
+.nav-links { display: none; gap: var(--sp-1); }
+.nav-link { background: none; border: none; color: var(--muted); font-size: var(--fs-body); padding: 8px 12px; border-radius: var(--r-pill); cursor: pointer; }
+.nav-link:hover { color: var(--text); }
+.nav-link.is-here { color: var(--text); font-weight: 600; }
+@media (min-width: 700px) { .nav-links { display: flex; } }
 
-a {
-  color: var(--text);
-  font-weight: 600;
-}
+/* --- Estantería horizontal de discos (sin métricas: solo palabra de tu gente) --- */
+.shelf { display: flex; flex-direction: column; gap: var(--sp-3); }
+.shelf-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.shelf-row { display: grid; grid-auto-flow: column; grid-auto-columns: 132px; gap: var(--sp-3); overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.shelf-row::-webkit-scrollbar { display: none; }
+.shelf-item { display: flex; flex-direction: column; gap: 6px; }
+.shelf-cover { width: 132px; height: 132px; border-radius: var(--r-s); }
+.shelf-title { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shelf-sub { font-size: 0.72rem; color: var(--muted-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-a:hover {
-  color: var(--accent);
-}
+/* --- Páginas interiores: detalle de nota y ficha de álbum --- */
+.back-link { display: inline-flex; align-items: center; gap: var(--sp-2); background: none; border: none; color: var(--muted); font-size: var(--fs-body); cursor: pointer; padding: 8px 0; width: fit-content; }
+.back-link:hover { color: var(--text); }
+/* cabecera inmersiva: el color del disco tiñe la parte alta y se funde con --bg */
+.album-hero { background: linear-gradient(180deg, rgba(111,168,255,0.16) 0%, rgba(111,168,255,0.05) 55%, transparent 100%); }
+.album-head { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-5) 0 var(--sp-4); }
+.album-cover-lg { width: 200px; height: 200px; border-radius: var(--r-s); flex: none; box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.album-title { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.album-artist { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: 1rem; color: var(--text); font-weight: 600; cursor: pointer; }
+.album-artist .note-avatar { width: 22px; height: 22px; }
+.album-facts { font-size: var(--fs-meta); color: var(--muted); }
+.vibe-cloud { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+@media (min-width: 700px) { .album-head { flex-direction: row; align-items: flex-end; gap: var(--sp-5); } }
 
-h1 {
-  margin: 0.2rem 0;
-}
+/* rejilla inferior de la ficha: notas a la izquierda, contexto a la derecha */
+.album-cols { display: flex; flex-direction: column; gap: var(--sp-4); }
+@media (min-width: 1000px) { .album-cols { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: var(--sp-5); align-items: start; } }
+.side-stack { display: flex; flex-direction: column; gap: var(--sp-4); }
+.mini-covers { display: flex; gap: var(--sp-2); }
+.mini-covers > div { width: 56px; height: 56px; border-radius: 6px; flex: none; cursor: pointer; }
 
-.container {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem;
-}
+/* --- Tira "recién anotado": carátulas pequeñas en scroll --- */
+.filmstrip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.filmstrip::-webkit-scrollbar { display: none; }
+.filmstrip > div { width: 48px; height: 48px; border-radius: 6px; flex: none; }
 
-/* ---- Login ---- */
-.login {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.8rem;
-  text-align: center;
-  padding: 1rem;
-}
+/* --- Perfil: cabecera con halo + tops con carátula --- */
+.profile-avatar-xl { width: 112px; height: 112px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 600; color: var(--text); box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px rgba(168,200,160,0.45), 0 18px 40px rgba(0,0,0,0.45); }
+.top-row { display: flex; align-items: center; gap: var(--sp-3); padding: 4px 0; cursor: pointer; border-radius: var(--r-s); }
+.top-row:hover .result-name { color: var(--accent); }
+.top-row .rank { color: var(--muted-2); font-size: 0.75rem; width: 14px; flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.top-row .cover { width: 40px; height: 40px; border-radius: var(--r-s); flex: none; }
+.top-row .cover.round { border-radius: 50%; }
+.top-row .result-name { font-size: var(--fs-body); }
 
-.login h1 {
-  font-size: 3rem;
-  color: var(--accent);
-}
+/* --- Layout del feed: notas a la izquierda, "sonando ahora" a la derecha --- */
+.feed-wide { max-width: 1080px; }
+.feed-layout { display: flex; flex-direction: column; gap: var(--sp-4); }
+.feed-main { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.feed-masonry { display: flex; flex-direction: column; gap: var(--sp-4); }
 
-/* ---- Navegación ---- */
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  padding: 0.8rem 1.2rem;
-  background: var(--surface);
-  position: sticky;
-  top: 0;
-}
+/* panel lateral: qué escuchan tus amigos ahora mismo */
+.listening-panel { background: var(--surface); border-radius: var(--r-m); padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); height: fit-content; }
+.listening-title { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
+.listening-row { display: flex; align-items: center; gap: var(--sp-3); }
+.listening-cover { width: 44px; height: 44px; border-radius: var(--r-s); flex: none; position: relative; }
+.listening-mini-avatar { position: absolute; right: -5px; bottom: -5px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 600; color: var(--text); }
+.listening-info { flex: 1; min-width: 0; }
+.listening-info strong { display: block; font-size: 0.8rem; }
+.listening-info span { display: block; font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
-.nav a {
-  text-decoration: none;
+@media (min-width: 1000px) {
+  /* la columna del panel solo existe si hay alguien escuchando */
+  .feed-layout.has-panel { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: var(--sp-5); }
+  .feed-layout.has-panel .feed-main { grid-column: 1; grid-row: 1; }
+  .listening-panel { grid-column: 2; grid-row: 1; }
+  /* mosaico a dos columnas: tarjetas grandes y pequeñas conviven */
+  .feed-masonry { display: block; columns: 2; column-gap: var(--sp-4); }
+  .feed-masonry > .note-card { break-inside: avoid; margin-bottom: var(--sp-4); }
+  .listening-panel { position: sticky; top: 76px; }
 }
+/* susurro de tipo, arriba de las tarjetas destacadas */
+.card-kicker { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); }
+/* tarjeta de artista: foto circular grande + nombre en grande */
+.artist-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-3); padding: var(--sp-2) 0; }
+.artist-name-xl { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; }
+/* tarjeta de álbum: carátula a todo el ancho */
+.album-cover-xl { width: 100%; height: 220px; border-radius: var(--r-s); }
 
-.nav-brand {
-  font-weight: 800;
-  color: var(--accent);
-  margin-right: 0.5rem;
-}
+/* --- Barra de interacciones de la nota: sin contadores, solo estados --- */
+.note-bar { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.btn-heart, .btn-comment { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--muted); font-size: 0.8rem; font-weight: 600; padding: 7px 14px; min-height: 34px; cursor: pointer; transition: color .15s ease, border-color .15s ease, background .15s ease; }
+.btn-heart:hover, .btn-comment:hover { color: var(--text); border-color: rgba(234,234,234,0.2); }
+.btn-heart.is-felt { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+/* señal privada: solo la ve el autor de la nota; nunca es un número público */
+.felt-whisper { font-size: 0.75rem; color: var(--accent); font-style: italic; opacity: 0.85; }
 
-/* ---- Botones ---- */
-.btn {
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: 999px;
-  padding: 0.55rem 1.3rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
+/* --- Hilo de conversación (un solo nivel de respuesta) --- */
+.thread { display: flex; flex-direction: column; gap: var(--sp-3); border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.comment { display: flex; flex-direction: column; gap: 4px; }
+.comment-reply { margin-left: var(--sp-5); padding-left: var(--sp-3); border-left: 2px solid var(--line); }
+.comment-body { font-size: var(--fs-body); line-height: 1.55; margin: 0; }
+.comment-foot { display: flex; align-items: center; gap: var(--sp-3); font-size: 0.72rem; color: var(--muted-2); }
+.comment-act { background: none; border: none; padding: 2px 0; color: var(--muted-2); font-size: 0.72rem; font-weight: 600; cursor: pointer; }
+.comment-act:hover { color: var(--text); }
+.comment-act.is-felt { color: var(--accent); }
+.replying-hint { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.75rem; color: var(--muted); }
+.reply-cancel { background: none; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 600; cursor: pointer; padding: 2px 4px; }
+.thread-input { display: flex; gap: var(--sp-2); align-items: center; }
+.thread-input input { flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); padding: 10px 16px; min-height: 40px; font-size: var(--fs-body); box-sizing: border-box; }
+.thread-send { width: 40px; height: 40px; flex: none; border-radius: 50%; border: none; background: var(--accent); color: var(--accent-ink); font-size: 1rem; cursor: pointer; }
 
-.btn:hover {
-  filter: brightness(1.1);
-}
+/* --- Escucha embebida: píldoras que despliegan el player DENTRO de la tarjeta --- */
+.listen-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.btn-listen { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); font-size: 0.78rem; font-weight: 600; padding: 7px 14px; min-height: 34px; cursor: pointer; transition: color .15s ease, border-color .15s ease; }
+.btn-listen:hover { border-color: rgba(168,200,160,0.4); }
+.btn-listen.is-open { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
+/* ============================================================
+   Adaptación a la app real (lo que el prototipo solo maquetaba)
+   ============================================================ */
 
-.btn-sm {
-  padding: 0.3rem 0.9rem;
-  font-size: 0.85rem;
-  margin-left: auto;
-}
+/* Players de verdad: iframes de Spotify / YouTube / SoundCloud.
+   El prototipo usaba maquetas (.sp-embed etc.); aquí, tamaños reales. */
+.player-box { border-radius: var(--r-m); overflow: hidden; }
+.player-box iframe { display: block; width: 100%; border: 0; }
+.player-box.video { aspect-ratio: 16 / 9; }
+.player-box.video iframe { height: 100%; }
+.player-box.audio iframe { height: 166px; }
+.player-box.spotify iframe { height: 152px; }
+.player-box.spotify-full iframe { height: 352px; }
 
-.btn-spotify {
-  font-size: 1.1rem;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  margin-left: auto;
-}
-
-.btn-link:hover {
-  color: var(--text);
-}
-
-/* ---- Perfil ---- */
-.profile-header {
-  display: flex;
-  gap: 1.2rem;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
+/* Carátulas y avatares reales (img): rellenan su marco */
+img.note-cover, img.result-cover, img.shelf-cover, img.album-cover-lg,
+img.note-avatar, img.person-avatar, img.profile-avatar, img.profile-avatar-xl, img.nav-avatar {
   object-fit: cover;
 }
 
-.avatar-sm {
-  width: 44px;
-  height: 44px;
-}
-
-.avatar-xs {
-  width: 24px;
-  height: 24px;
-  font-size: 0.7rem;
-}
-
-.avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  color: var(--muted);
-}
-
-.now-playing {
-  color: var(--accent);
-  margin: 0.2rem 0;
-}
-
-.muted {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.error {
-  color: #e66;
-}
-
-/* ---- Afinidad ---- */
-.affinity {
-  margin-left: auto;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-}
-
-.affinity-score {
-  font-size: 2.6rem;
-  font-weight: 800;
-  color: var(--accent);
-}
-
-.common {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 0.8rem 1.2rem;
-  margin-bottom: 1.5rem;
-}
-
-.common h2 {
-  margin-top: 0;
-}
-
-/* ---- Tops ---- */
-.tops {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-@media (max-width: 600px) {
-  .tops {
-    grid-template-columns: 1fr;
-  }
-}
-
-.tops ol {
-  padding-left: 1.4rem;
-  line-height: 1.9;
-}
-
-/* ---- Listas de usuarios ---- */
-.user-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 0.7rem 1rem;
-}
-
-.user-card a {
-  text-decoration: none;
-}
-
-.user-card p {
-  margin: 0.15rem 0 0;
-}
-
-.user-card .btn-sm {
-  flex-shrink: 0;
-}
-
-/* ---- Notas ---- */
-.accent {
-  color: var(--accent);
-}
-
-.cover {
-  width: 56px;
-  height: 56px;
-  border-radius: 6px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.cover-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Degradado neutro por defecto; la tarjeta lo tiñe con el color del vibe */
-  background: linear-gradient(135deg, #2e2e2e, #181818);
-  color: var(--muted);
-}
-
-.badge {
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 0.75rem;
-  border-radius: 999px;
-  padding: 0.1rem 0.6rem;
-  margin-left: 0.5rem;
-  vertical-align: middle;
-}
-
-.note-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.note-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 1rem 1.1rem;
-}
-
-/* Carátula + contenido, debajo de la fila del autor */
-.note-card-main {
-  display: flex;
-  gap: 0.9rem;
-}
-
-.note-body {
-  flex: 1;
-}
-
-.note-body p {
-  margin: 0.2rem 0;
-}
-
-.note-author {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.note-author a {
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-/* La franja de "sonando ahora" encima del feed de notas */
-.listening-strip {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 0.6rem 1rem;
-  margin-bottom: 1.2rem;
-}
-
-.listening-strip p {
-  margin: 0.25rem 0;
-}
-
-/* El motivo humano en grande y con el máximo contraste; el formato
-   (canción, álbum...) en gris suave: la historia manda */
-.note-text {
-  white-space: pre-wrap;
-  font-size: 1.15rem;
-  line-height: 1.55;
-  color: #fff;
-}
-
-.note-item {
-  font-size: 0.85rem;
-}
-
-/* El nombre del item lleva a su ficha sin gritar que es un enlace */
-.note-item a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.note-item a:hover {
-  color: var(--accent);
-}
-
-.cover-link {
-  flex-shrink: 0;
-  align-self: flex-start;
-}
-
-.cover-lg {
-  width: 120px;
-  height: 120px;
-  border-radius: 10px;
-}
-
-.note-date {
-  font-size: 0.75rem;
-}
-
-/* La explicación de la recomendación: personal si coincide contigo */
-.note-because {
-  color: var(--accent);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.note-anchor {
-  font-size: 0.85rem;
-}
-
-/* ---- Player embebido (YouTube / SoundCloud) ---- */
-.platform-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.45rem;
-}
-
-.btn-platform {
-  background: none;
-  border: 1px solid #3a3a3a;
-  color: var(--text);
-  border-radius: 999px;
-  padding: 0.25rem 0.85rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-platform:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.embed-wrap {
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.embed-wrap iframe {
-  display: block;
-  width: 100%;
-  border: 0;
-}
-
-.embed-wrap.video {
-  aspect-ratio: 16 / 9;
-}
-
-.embed-wrap.video iframe {
-  height: 100%;
-}
-
-.embed-wrap.audio iframe {
-  height: 166px;
-}
-
-/* El embed de Spotify: compacto para canciones, con tracklist para
-   álbumes y artistas */
-.embed-wrap.spotify iframe {
-  height: 152px;
-}
-
-.embed-wrap.spotify-full iframe {
-  height: 352px;
-}
-
-.listen-field {
-  margin-top: 0.8rem;
-}
-
-/* ---- Ancla de recomendación (formulario) ---- */
-.anchor-picker {
-  margin-top: 0.8rem;
-}
-
-.anchor-picker p {
-  margin: 0.3rem 0;
-}
-
-.anchor-search {
-  display: flex;
-  gap: 0.8rem;
-  margin-bottom: 0.5rem;
-}
-
-.note-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  align-items: flex-end;
-}
-
-.note-actions .btn-link {
-  margin-left: 0;
-}
-
-.note-form {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 1rem 1.2rem;
-  margin-bottom: 1.5rem;
-}
-
-.note-form h2 {
-  margin-top: 0;
-  font-size: 1.1rem;
-}
-
-.note-form textarea,
-.note-form input,
-.new-group input,
-.search-form input {
-  width: 100%;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font: inherit;
-}
-
-.note-form textarea {
-  resize: vertical;
-}
-
-.note-form-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin-top: 0.8rem;
-}
-
-/* ---- Vibes ---- */
-.vibe-chip {
-  display: inline-block;
-  background: var(--bg);
-  color: #fff;
-  border-radius: 999px;
-  padding: 0.25rem 0.8rem;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 50%);
-}
-
-.vibe-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-top: 0.8rem;
-}
-
-.vibe-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.vibe-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-}
-
-.vibe-emoji {
-  background: var(--bg);
-  border: 2px solid transparent;
-  border-radius: 8px;
-  font-size: 1.2rem;
-  padding: 0.15rem 0.35rem;
-  cursor: pointer;
-}
-
-.vibe-swatch.selected,
-.vibe-emoji.selected {
-  border-color: var(--text);
-}
-
-.new-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.8rem;
-}
-
-.new-group .btn-sm {
-  align-self: flex-start;
-  margin-left: 0;
-}
-
-.new-group-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.new-group select {
-  flex: 1;
-  min-width: 0;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font: inherit;
-}
-
-.search-form {
-  display: flex;
-  gap: 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.search-results {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-@media (max-width: 700px) {
-  .search-results {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---- Onboarding ---- */
-.onboarding h2 {
-  font-size: 1.1rem;
-  margin-top: 1.8rem;
-}
-
-.tag-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tag-chip {
-  background: var(--surface);
-  color: var(--text);
-  border: 2px solid transparent;
-  border-radius: 999px;
-  padding: 0.4rem 1rem;
-  font: inherit;
-  cursor: pointer;
-}
-
-.tag-chip:hover {
-  border-color: #333;
-}
-
-.tag-chip.selected {
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.onboarding select {
-  width: 100%;
-  max-width: 340px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 0.6rem 0.8rem;
-  font: inherit;
-}
-
-/* ---- Chat ---- */
-.profile-actions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-}
-
-.btn-outline {
-  background: none;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-}
-
-.chat {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 8rem);
-}
-
-.chat-header {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid #2a2a2a;
-}
-
-.chat-header a {
-  text-decoration: none;
-  font-size: 1.3rem;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem 0;
-}
-
-.bubble {
-  max-width: 70%;
-  background: var(--surface);
-  border-radius: 14px 14px 14px 4px;
-  padding: 0.5rem 0.9rem;
-  align-self: flex-start;
-}
-
-.bubble-mine {
-  background: #1d4d2c;
-  border-radius: 14px 14px 4px 14px;
-  align-self: flex-end;
-}
-
-.bubble p {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-}
-
-.bubble-time {
-  display: block;
-  text-align: right;
-  color: var(--muted);
-  font-size: 0.7rem;
-  margin-top: 0.15rem;
-}
-
-.chat-input {
-  display: flex;
-  gap: 0.8rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid #2a2a2a;
-}
-
-.chat-input input {
-  flex: 1;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid #333;
-  border-radius: 999px;
-  padding: 0.6rem 1rem;
-  font: inherit;
-}
-
-.chat-preview {
-  flex: 1;
-  min-width: 0;
-}
-
-.chat-preview p {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chat-time {
-  flex-shrink: 0;
-}
-
-/* ---- Me llega y comentarios ---- */
-.interactions-bar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin: 0.4rem 0 0;
-  font-size: 0.9rem;
-}
-
-.interactions-bar .btn-link {
-  margin-left: 0;
-}
-
-.interactions-bar .liked,
-.comment-meta .liked {
-  color: var(--accent);
-}
-
-/* La señal íntima del autor: a quién le llega su nota */
-.note-llega {
-  color: var(--accent);
-  font-size: 0.85rem;
-}
-
-.comments-panel {
-  margin-top: 0.6rem;
-  padding: 0.6rem 0.8rem;
-  border-left: 2px solid #2a2a2a;
-}
-
-.comment-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.comment {
-  margin-bottom: 0.5rem;
-}
-
-.comment-reply {
-  margin-left: 1.4rem;
-}
-
-.comment-text {
-  margin: 0;
-}
-
-.comment-meta {
-  display: flex;
-  gap: 0.8rem;
-  margin: 0.1rem 0 0;
-  font-size: 0.8rem;
-}
-
-.comment-meta .btn-link {
-  margin-left: 0;
-  font-size: 0.8rem;
-}
-
-.comment-llega {
-  color: var(--accent);
-}
-
-.comment-replying {
-  margin: 0.4rem 0 0;
-}
-
-.comment-replying .btn-link {
-  margin-left: 0.4rem;
-}
-
-.comment-form {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
-}
-
-.comment-form input {
-  flex: 1;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid #333;
-  border-radius: 999px;
-  padding: 0.4rem 0.9rem;
-  font: inherit;
-  font-size: 0.9rem;
-}
+/* Sin foto: degradado neutro; la tarjeta lo tiñe con el color del vibe */
+.cover-placeholder { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2e2e2e, #181818); color: var(--muted); }
+.avatar-placeholder { background: linear-gradient(135deg, #556b52, #38473a); }
+
+/* Listas que en React son <ul> */
+ul.plain-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+ul.plain-list.gapped { gap: var(--sp-4); }
+ul.note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-4); }
+ul.feed-masonry { list-style: none; margin: 0; padding: 0; }
+
+/* Variantes de tarjeta que el prototipo resolvía con estilos en línea */
+.artist-hero-img { width: 128px; height: 128px; border-radius: 50%; object-fit: cover; }
+.note-card-artist .note-text { text-align: center; }
+.note-card-artist .note-meta { justify-content: center; border-top: none; padding-top: 0; }
+.note-card-artist .note-track { flex: none; }
+.thread-send:disabled { background: var(--surface-2); color: var(--muted-2); cursor: default; }
+.listening-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; animation: sorofy-pulse 2.4s ease-in-out infinite; }
+a.listening-row:hover strong { color: var(--accent); }
+
+/* Texto auxiliar */
+.muted { color: var(--muted); font-size: var(--fs-body); }
+.accent { color: var(--accent); }
+.error { color: var(--danger); font-size: var(--fs-body); }
+
+/* Nav real: en móvil mandan los enlaces (el prototipo los ocultaba),
+   el buscador solo cabe en pantallas anchas */
+.nav-links { display: flex; }
+.nav-search { display: none; }
+@media (min-width: 700px) { .nav-search { display: flex; } }
+.nav-side { display: flex; align-items: center; gap: var(--sp-2); }
+.nav a.nav-logo:hover, .nav a.nav-link:hover { color: var(--text); }
+a.nav-link.is-here { color: var(--text); font-weight: 600; }
+
+/* Login y onboarding */
+.login-head { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); }
+.onboarding { max-width: 560px; }
+.onboarding-head { display: flex; flex-direction: column; gap: var(--sp-2); padding-top: var(--sp-5); }
+.onboarding-title { font-size: 1.5rem; }
+.onboarding-tags { display: flex; flex-direction: column; gap: var(--sp-3); }
+.onboarding-hint { font-size: 0.75rem; color: var(--muted-2); }
+
+/* Filas de formulario que el prototipo resolvía con estilos en línea */
+.form-row { display: flex; gap: var(--sp-2); align-items: center; }
+.form-row .field, .form-row input, .form-row select { flex: 1; min-width: 0; }
+
+/* Los inputs reales no siempre son type="text" */
+.field input[type="url"], .field input[type="search"],
+.form-row input, .form-row select, .new-group input {
+  appearance: none; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-s); padding: 12px 14px; min-height: 44px; font-size: var(--fs-body); box-sizing: border-box; width: 100%;
+}
+.form-row select { background: var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23909088' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 40px; }
+.form-row input::placeholder, .new-group input::placeholder { color: var(--muted-2); font-style: italic; }
+
+/* Cabeceras de página y pies de formulario */
+.page-head { display: flex; flex-direction: column; gap: var(--sp-2); }
+.form-head { display: flex; flex-direction: column; gap: var(--sp-1); }
+.form-title { font-size: 1rem; }
+.form-foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-3); flex-wrap: wrap; }
+.form-foot .section-sub { flex: 1; min-width: 0; font-size: 0.75rem; color: var(--muted-2); }
+.chip-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.anchor-name { font-style: normal; }
+
+/* Buscador de Notas: panel compacto y CTA de crear grupo */
+.search-panel { gap: var(--sp-2); }
+.new-group-cta { border-top: 1px solid var(--line); padding-top: var(--sp-3); display: flex; align-items: center; gap: var(--sp-3); }
+.new-group-cta .section-sub { flex: 1; min-width: 0; }
+.new-group { display: flex; flex-direction: column; gap: var(--sp-2); }
+.new-group .btn { align-self: flex-start; }
+
+/* Perfiles */
+.profile-head-halo { background: linear-gradient(160deg, rgba(168,200,160,0.16), rgba(168,200,160,0.03) 70%); border: 1px solid rgba(168,200,160,0.18); border-radius: var(--r-m); padding: var(--sp-6) var(--sp-5); }
+.profile-name-xl { font-size: 1.7rem; }
+.profile-sub { margin-top: 6px; }
+.profile-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }
+.now-playing.quiet { border: none; padding: 0; }
+.people-panel { gap: 0; }
+.common-panel { gap: var(--sp-2); }
+.common-title { font-size: 1rem; }
+.common-name { color: var(--text); }
+
+/* Ficha del item: la cabecera grande también vale sin carátula */
+.album-cover-lg.is-round { border-radius: 50%; }
+span.album-cover-lg.cover-placeholder { display: flex; font-size: 3rem; }
+.album-head-info { display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; }
+.album-head-info .profile-actions { justify-content: flex-start; }
+
+/* Hilo del chat: ocupa el alto de la ventana y solo scrollea el centro */
+.chat { display: flex; flex-direction: column; height: calc(100vh - 9rem); }
+.chat-header { display: flex; align-items: center; gap: var(--sp-3); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line); }
+.chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4) 0; }
+.bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: break-word; }
+.bubble-time { display: block; }
+.chat-send:disabled { background: var(--surface-2); color: var(--muted-2); cursor: default; }
+a.chat-row:hover strong { color: var(--accent); }

@@ -102,75 +102,82 @@ export default function NoteInteractionsBar({ noteId, interactions }: Props) {
   const myId = getMyUserId();
 
   const renderComment = (comment: NoteCommentData, root?: CommentThread) => (
-    <li key={comment.id} className={root ? "comment comment-reply" : "comment"}>
-      <p className="comment-text">
+    <div key={comment.id} className={root ? "comment comment-reply" : "comment"}>
+      <p className="comment-body">
         <strong>{comment.author.displayName}</strong> {comment.text}
       </p>
-      <p className="comment-meta muted">
-        {new Date(comment.createdAt).toLocaleDateString()}
+      <div className="comment-foot">
+        <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
         {comment.author.id === myId ? (
           <>
             {/* El recuento es privado: solo lo ves en lo tuyo */}
             {(comment.likeCount ?? 0) > 0 && (
-              <span className="comment-llega">♥ Le llega a {comment.likeCount}</span>
+              <span className="felt-whisper">♥ Le llega a {comment.likeCount}</span>
             )}
-            <button className="btn-link" onClick={() => removeComment(comment)}>
+            <button className="comment-act" onClick={() => removeComment(comment)}>
               Borrar
             </button>
           </>
         ) : (
-          <button className="btn-link" onClick={() => toggleCommentLike(comment)}>
+          <button
+            className={`comment-act${comment.likedByMe ? " is-felt" : ""}`}
+            onClick={() => toggleCommentLike(comment)}
+          >
             {comment.likedByMe ? "♥ Te llega" : "♡ Me llega"}
           </button>
         )}
-        <button className="btn-link" onClick={() => setReplyTo(root ?? { root: comment, replies: [] })}>
+        <button
+          className="comment-act"
+          onClick={() => setReplyTo(root ?? { root: comment, replies: [] })}
+        >
           Responder
         </button>
-      </p>
-    </li>
+      </div>
+    </div>
   );
 
   return (
-    <div className="interactions">
-      <p className="interactions-bar">
+    <>
+      <div className="note-bar">
         {!isMine && (
-          <button className={liked ? "btn-link liked" : "btn-link"} onClick={toggleLike}>
+          <button className={`btn-heart${liked ? " is-felt" : ""}`} onClick={toggleLike}>
             {liked ? "♥ Te llega" : "♡ Me llega"}
           </button>
         )}
-        <button className="btn-link" onClick={toggleComments}>
+        <button className="btn-comment" onClick={toggleComments}>
           {interactions.hasComments || (thread !== null && thread.length > 0)
             ? "💬 Ver conversación"
             : "💬 Comentar"}
         </button>
         {isMine && interactions.likedBy!.length > 0 && (
-          <span className="note-llega">♥ {formatLikedBy(interactions.likedBy!)}</span>
+          <span className="felt-whisper">♥ {formatLikedBy(interactions.likedBy!)}</span>
         )}
-      </p>
+      </div>
 
       {open && (
-        <div className="comments-panel">
+        <div className="thread">
           {thread === null ? (
-            <p className="muted">Cargando…</p>
+            <div className="loading-state">
+              <span className="spinner" />
+              Cargando…
+            </div>
           ) : (
-            <ul className="comment-list">
-              {thread.map((t) => (
-                <Fragment key={t.root.id}>
-                  {renderComment(t.root)}
-                  {t.replies.map((reply) => renderComment(reply, t))}
-                </Fragment>
-              ))}
-            </ul>
+            thread.map((t) => (
+              <Fragment key={t.root.id}>
+                {renderComment(t.root)}
+                {t.replies.map((reply) => renderComment(reply, t))}
+              </Fragment>
+            ))
           )}
           {replyTo && (
-            <p className="muted comment-replying">
-              Respondiendo a {replyTo.root.author.displayName}{" "}
-              <button className="btn-link" onClick={() => setReplyTo(null)}>
+            <div className="replying-hint">
+              <span>Respondiendo a {replyTo.root.author.displayName}</span>
+              <button className="reply-cancel" onClick={() => setReplyTo(null)}>
                 Cancelar
               </button>
-            </p>
+            </div>
           )}
-          <div className="comment-form">
+          <div className="thread-input">
             <input
               value={text}
               maxLength={1000}
@@ -178,13 +185,13 @@ export default function NoteInteractionsBar({ noteId, interactions }: Props) {
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
             />
-            <button className="btn btn-sm" disabled={!text.trim()} onClick={send}>
-              Enviar
+            <button className="thread-send" aria-label="Enviar" disabled={!text.trim()} onClick={send}>
+              ↑
             </button>
           </div>
         </div>
       )}
       {error && <p className="error">{error}</p>}
-    </div>
+    </>
   );
 }

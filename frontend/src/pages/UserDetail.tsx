@@ -1,9 +1,23 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import type { UserProfile, Affinity, Note } from "../types";
 import TopsPanel from "../components/TopsPanel";
 import NoteList from "../components/NoteList";
+
+// "Crumb, Men I Trust y Sílvia Pérez Cruz" — nombres en claro, separadores en gris
+function BoldList({ names }: { names: string[] }) {
+  return (
+    <>
+      {names.map((name, i) => (
+        <Fragment key={name}>
+          {i > 0 && (i === names.length - 1 ? " y " : ", ")}
+          <strong className="common-name">{name}</strong>
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 export default function UserDetail() {
   const { id } = useParams();
@@ -31,62 +45,80 @@ export default function UserDetail() {
   };
 
   if (error) return <p className="error">{error}</p>;
-  if (!profile) return <p>Cargando…</p>;
+  if (!profile) {
+    return (
+      <div className="loading-state">
+        <span className="spinner" />
+        Cargando…
+      </div>
+    );
+  }
 
   return (
     <>
-      <header className="profile-header">
-        {profile.avatarUrl && <img className="avatar" src={profile.avatarUrl} alt="" />}
+      <header className="profile-head">
+        {profile.avatarUrl ? (
+          <img className="profile-avatar" src={profile.avatarUrl} alt="" />
+        ) : (
+          <span className="profile-avatar avatar-placeholder">
+            {profile.displayName[0]?.toUpperCase() ?? "♪"}
+          </span>
+        )}
         <div>
-          <h1>{profile.displayName}</h1>
-          <p className="muted">
+          <h1 className="profile-name">{profile.displayName}</h1>
+          <p className="profile-sub">
             {profile.followers} seguidores · sigue a {profile.following}
           </p>
-          <div className="profile-actions">
-            <button className="btn" onClick={toggleFollow}>
-              {profile.isFollowedByMe ? "Dejar de seguir" : "Seguir"}
-            </button>
-            <Link className="btn btn-outline" to={`/chats/${profile.id}`}>
-              Enviar mensaje
-            </Link>
-          </div>
         </div>
-        {/* El contador de confianza sustituye al % de afinidad en el UI:
-            la afinidad sigue viva como señal interna del feed */}
-        {profile.trustCount > 0 && (
-          <div className="affinity">
-            <span className="affinity-score">{profile.trustCount}</span>
-            <span className="muted">
-              {profile.trustCount === 1 ? "canción guardada" : "canciones guardadas"}
-              <br />
-              gracias a sus notas
-            </span>
-          </div>
-        )}
+        <div className="profile-actions">
+          <button
+            className={`btn btn-ghost btn-sm btn-follow${profile.isFollowedByMe ? " is-following" : ""}`}
+            onClick={toggleFollow}
+          >
+            {profile.isFollowedByMe ? "Siguiendo" : "Seguir"}
+          </button>
+          <Link className="btn btn-quiet btn-sm" to={`/chats/${profile.id}`}>
+            Enviar mensaje
+          </Link>
+        </div>
       </header>
 
+      {/* El contador de confianza sustituye al % de afinidad en el UI:
+          la afinidad sigue viva como señal interna del feed */}
+      {profile.trustCount > 0 && (
+        <div className="trust-box">
+          <span className="trust-num">{profile.trustCount}</span>
+          <span className="trust-label">
+            {profile.trustCount === 1 ? "canción guardada" : "canciones guardadas"} gracias a sus
+            notas. Es la única métrica que verás aquí.
+          </span>
+        </div>
+      )}
+
       {affinity && (affinity.commonArtists.length > 0 || affinity.commonTracks.length > 0) && (
-        <section className="common">
-          <h2>En común</h2>
-          {affinity.commonArtists.length > 0 && (
-            <p>
-              <strong>Artistas:</strong> {affinity.commonArtists.join(", ")}
-            </p>
-          )}
-          {affinity.commonTracks.length > 0 && (
-            <p>
-              <strong>Canciones:</strong> {affinity.commonTracks.join(" · ")}
-            </p>
-          )}
-        </section>
+        <div className="panel common-panel">
+          <h2 className="section-title common-title">En común</h2>
+          <p className="section-sub">
+            {affinity.commonArtists.length > 0 && (
+              <>
+                Escucháis a <BoldList names={affinity.commonArtists} />.{" "}
+              </>
+            )}
+            {affinity.commonTracks.length > 0 && (
+              <>
+                Compartís <BoldList names={affinity.commonTracks} />.
+              </>
+            )}
+          </p>
+        </div>
       )}
 
       <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
 
-      <section>
-        <h2>Su bitácora</h2>
-        <NoteList notes={notes} />
-      </section>
+      <div className="page-head">
+        <h2 className="section-title">Su bitácora</h2>
+      </div>
+      <NoteList notes={notes} />
     </>
   );
 }

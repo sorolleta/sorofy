@@ -2,27 +2,29 @@ import type { TopArtist, TopTrack } from "../types";
 
 export default function TopsPanel({ artists, tracks }: { artists: TopArtist[]; tracks: TopTrack[] }) {
   return (
-    <div className="tops">
-      <section>
-        <h2>Top artistas</h2>
-        {artists.length === 0 && <p className="muted">Nada por aquí todavía.</p>}
-        <ol>
-          {artists.map((a) => (
-            <li key={a.spotifyArtistId}>{a.name}</li>
-          ))}
-        </ol>
-      </section>
-      <section>
-        <h2>Top canciones</h2>
-        {tracks.length === 0 && <p className="muted">Nada por aquí todavía.</p>}
-        <ol>
-          {tracks.map((t) => (
-            <li key={t.spotifyTrackId}>
-              {t.name} <span className="muted">— {t.artistName}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+    <div className="top-cols">
+      <div className="top-list">
+        <h3>Top artistas · este mes</h3>
+        {artists.length === 0 && <p className="section-sub">Nada por aquí todavía.</p>}
+        {artists.map((a) => (
+          <div key={a.spotifyArtistId} className="top-item">
+            <span className="rank">{a.rank}</span>
+            {a.name}
+          </div>
+        ))}
+      </div>
+      <div className="top-list">
+        <h3>Top canciones · este mes</h3>
+        {tracks.length === 0 && <p className="section-sub">Nada por aquí todavía.</p>}
+        {tracks.map((t) => (
+          <div key={t.spotifyTrackId} className="top-item">
+            <span className="rank">{t.rank}</span>
+            <span>
+              {t.name} <small>— {t.artistName}</small>
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

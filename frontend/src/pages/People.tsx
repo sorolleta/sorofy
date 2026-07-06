@@ -25,27 +25,49 @@ export default function People() {
     );
   };
 
-  if (!loaded) return <p>Cargando…</p>;
-  if (users.length === 0) return <p className="muted">Todavía no hay más gente por aquí.</p>;
+  if (!loaded) {
+    return (
+      <div className="loading-state">
+        <span className="spinner" />
+        Cargando…
+      </div>
+    );
+  }
+  if (users.length === 0) {
+    return <p className="empty-state">Todavía no hay más gente por aquí.</p>;
+  }
 
   return (
     <>
-      <h1>Gente</h1>
-      <ul className="user-list">
+      <div className="page-head">
+        <h1 className="section-title">Gente</h1>
+        <p className="section-sub">
+          Personas que escuchan como tú. Sin números públicos: solo sus notas
+          hablan por ellas.
+        </p>
+      </div>
+      <div className="panel people-panel">
         {users.map((user) => (
-          <li key={user.id} className="user-card">
+          <div key={user.id} className="person-row">
             {user.avatarUrl ? (
-              <img className="avatar avatar-sm" src={user.avatarUrl} alt="" />
+              <img className="person-avatar" src={user.avatarUrl} alt="" />
             ) : (
-              <div className="avatar avatar-sm avatar-placeholder">♪</div>
+              <span className="person-avatar avatar-placeholder">
+                {user.displayName[0]?.toUpperCase() ?? "♪"}
+              </span>
             )}
-            <Link to={`/gente/${user.id}`}>{user.displayName}</Link>
-            <button className="btn btn-sm" onClick={() => toggleFollow(user)}>
-              {user.isFollowedByMe ? "Dejar de seguir" : "Seguir"}
+            <Link to={`/gente/${user.id}`} className="person-name">
+              {user.displayName}
+            </Link>
+            <button
+              className={`btn btn-ghost btn-sm btn-follow${user.isFollowedByMe ? " is-following" : ""}`}
+              onClick={() => toggleFollow(user)}
+            >
+              {user.isFollowedByMe ? "Siguiendo" : "Seguir"}
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </>
   );
 }

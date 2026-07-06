@@ -7,7 +7,8 @@ export function youtubeEmbedUrl(url: string): string | null {
 }
 
 export function soundcloudEmbedUrl(url: string): string {
-  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954`;
+  // El color del player es el acento salvia de la app
+  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23a8c8a0`;
 }
 
 // El embed oficial de Spotify: 30 segundos para cualquiera, la canción
@@ -37,20 +38,20 @@ export default function PlatformPlayer({ youtubeUrl, soundcloudUrl, spotifyType,
 
   return (
     <>
-      <p className="platform-actions">
+      <div className="listen-row">
         {spotifyEmbed && (
           <button
             type="button"
-            className="btn-platform"
+            className={`btn-listen${playing === "spotify" ? " is-open" : ""}`}
             onClick={() => setPlaying(playing === "spotify" ? null : "spotify")}
           >
-            {playing === "spotify" ? "✕ Cerrar" : "▶ Escuchar"}
+            {playing === "spotify" ? "✕ Cerrar" : "▶ Escuchar · Muestra"}
           </button>
         )}
         {youtubeEmbed && (
           <button
             type="button"
-            className="btn-platform"
+            className={`btn-listen${playing === "youtube" ? " is-open" : ""}`}
             onClick={() => setPlaying(playing === "youtube" ? null : "youtube")}
           >
             {playing === "youtube" ? "✕ Cerrar vídeo" : "▶ Ver en YouTube"}
@@ -59,20 +60,20 @@ export default function PlatformPlayer({ youtubeUrl, soundcloudUrl, spotifyType,
         {soundcloudUrl && (
           <button
             type="button"
-            className="btn-platform"
+            className={`btn-listen${playing === "soundcloud" ? " is-open" : ""}`}
             onClick={() => setPlaying(playing === "soundcloud" ? null : "soundcloud")}
           >
             {playing === "soundcloud" ? "✕ Cerrar audio" : "▶ Escuchar en SoundCloud"}
           </button>
         )}
-      </p>
+      </div>
       {playing === "spotify" && spotifyEmbed && (
-        <div className={`embed-wrap ${spotifyType === "track" ? "spotify" : "spotify-full"}`}>
+        <div className={`player-box ${spotifyType === "track" ? "spotify" : "spotify-full"}`}>
           <iframe src={spotifyEmbed} title={`Spotify: ${title}`} allow="encrypted-media" />
         </div>
       )}
       {playing === "youtube" && youtubeEmbed && (
-        <div className="embed-wrap video">
+        <div className="player-box video">
           <iframe
             src={youtubeEmbed}
             title={`Vídeo de ${title}`}
@@ -82,7 +83,7 @@ export default function PlatformPlayer({ youtubeUrl, soundcloudUrl, spotifyType,
         </div>
       )}
       {playing === "soundcloud" && soundcloudUrl && (
-        <div className="embed-wrap audio">
+        <div className="player-box audio">
           <iframe src={soundcloudEmbedUrl(soundcloudUrl)} title={`Audio de ${title}`} allow="encrypted-media" />
         </div>
       )}

@@ -13,8 +13,8 @@ export default function Feed() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
 
-  // Las tarjetas se cargan una vez; la franja de "sonando ahora" se
-  // refresca sola cada 30 segundos, como quien mira qué suena
+  // Las tarjetas se cargan una vez; el panel de "sonando ahora" se
+  // refresca solo cada 30 segundos, como quien mira qué suena
   useEffect(() => {
     api.get<FeedEntry[]>("/api/feed").then((f) => {
       setEntries(f);
@@ -44,10 +44,10 @@ export default function Feed() {
   const saveAction = (entry: FeedEntry) => {
     if (entry.note.item.type !== "track" || !entry.note.item.spotifyId) return undefined;
     if (savedItems.has(entry.note.item.id)) {
-      return <span className="muted">✓ En tu playlist</span>;
+      return <span className="btn btn-sm btn-save is-saved">✓ En tu playlist</span>;
     }
     return (
-      <button className="btn btn-sm" onClick={() => save(entry)}>
+      <button className="btn btn-ghost btn-sm btn-save" onClick={() => save(entry)}>
         Guardar
       </button>
     );
@@ -55,45 +55,71 @@ export default function Feed() {
 
   const nowListening = listening.filter((i) => i.nowPlaying !== null);
 
-  if (!loaded) return <p>Cargando…</p>;
+  if (!loaded) {
+    return (
+      <div className="loading-state">
+        <span className="spinner" />
+        Preparando tu feed…
+      </div>
+    );
+  }
 
   return (
-    <>
-      <h1>Feed</h1>
+    <div className={`feed-layout${nowListening.length > 0 ? " has-panel" : ""}`}>
+      <div className="feed-main">
+        {error && <p className="error">{error}</p>}
+
+        {entries.length === 0 ? (
+          <p className="empty-state">
+            Aún no hay notas que descubrir.{" "}
+            <Link to="/gente" className="accent">Sigue a alguien</Link> o{" "}
+            <Link to="/notas" className="accent">escribe la primera</Link>.
+          </p>
+        ) : (
+          <ul className="feed-masonry">
+            {entries.map((entry) => (
+              <NoteCard
+                key={entry.note.id}
+                note={entry.note}
+                author={entry.author}
+                actions={saveAction(entry)}
+                because={entry.becauseArtist}
+                becauseLocal={entry.becauseProvince}
+                interactions={interactions.get(entry.note.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
 
       {nowListening.length > 0 && (
-        <section className="listening-strip">
+        <aside className="listening-panel">
+          <span className="listening-title">
+            <span className="dot" />
+            Sonando ahora entre tu gente
+          </span>
           {nowListening.map((item) => (
-            <p key={item.userId} className="now-playing">
-              ♪ <Link to={`/gente/${item.userId}`}>{item.displayName}</Link>:{" "}
-              <strong>{item.nowPlaying!.track}</strong> — {item.nowPlaying!.artist}
-            </p>
+            <Link key={item.userId} to={`/gente/${item.userId}`} className="listening-row">
+              <span className="listening-cover cover-placeholder">
+                ♪
+                {item.avatarUrl ? (
+                  <img className="listening-mini-avatar" src={item.avatarUrl} alt="" />
+                ) : (
+                  <span className="listening-mini-avatar avatar-placeholder">
+                    {item.displayName[0]?.toUpperCase()}
+                  </span>
+                )}
+              </span>
+              <span className="listening-info">
+                <strong>{item.displayName}</strong>
+                <span>
+                  {item.nowPlaying!.track} — {item.nowPlaying!.artist}
+                </span>
+              </span>
+            </Link>
           ))}
-        </section>
+        </aside>
       )}
-
-      {error && <p className="error">{error}</p>}
-
-      {entries.length === 0 ? (
-        <p className="muted">
-          Aún no hay notas que descubrir. <Link to="/gente">Sigue a alguien</Link> o{" "}
-          <Link to="/notas">escribe la primera</Link>.
-        </p>
-      ) : (
-        <ul className="note-list">
-          {entries.map((entry) => (
-            <NoteCard
-              key={entry.note.id}
-              note={entry.note}
-              author={entry.author}
-              actions={saveAction(entry)}
-              because={entry.becauseArtist}
-              becauseLocal={entry.becauseProvince}
-              interactions={interactions.get(entry.note.id)}
-            />
-          ))}
-        </ul>
-      )}
-    </>
+    </div>
   );
 }
