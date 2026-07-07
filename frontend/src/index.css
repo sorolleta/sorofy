@@ -450,6 +450,8 @@ body::before { content: ""; position: fixed; inset: 0; z-index: 40; pointer-even
    "screens" median 620px; aquí la nav pega arriba y el login llena la ventana */
 .nav { top: 0; }
 .screen-login { min-height: 100vh; }
+.hero { min-height: 100vh; }
+.hero-logo { font-size: 1.2rem; }
 
 /* Las notas reales traen saltos de línea */
 .note-text { white-space: pre-wrap; }

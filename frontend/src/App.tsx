@@ -21,20 +21,42 @@ function SpotifyIcon() {
   );
 }
 
+// Collage de la portada: pares de gradiente que evocan carátulas
+// (sin sesión no hay API de la que sacar imágenes reales)
+const collageTiles = [
+  ["#2c3242", "#1a1d26"], ["#8a6d3f", "#5c4a2e"], ["#334032", "#1c221c"],
+  ["#3a3242", "#241f2b"], ["#40342c", "#241d18"], ["#5b6478", "#39404f"],
+  ["rgba(245,166,35,0.5)", "rgba(245,166,35,0.12)"], ["#324038", "#1c2620"],
+  ["#6b5252", "#473838"], ["#42342a", "#2a211a"], ["#2c3242", "#1a1d26"],
+  ["#556b52", "#38473a"], ["#3a3242", "#241f2b"], ["#334032", "#1c221c"],
+  ["rgba(111,168,255,0.4)", "rgba(111,168,255,0.1)"], ["#8a6d3f", "#5c4a2e"],
+  ["#40342c", "#241d18"], ["#5b6478", "#39404f"], ["#324038", "#1c2620"],
+  ["rgba(217,143,224,0.4)", "rgba(217,143,224,0.1)"], ["#42342a", "#2a211a"],
+  ["#2c3242", "#1a1d26"], ["#6b5252", "#473838"], ["#556b52", "#38473a"],
+];
+
 function Login() {
   if (getToken()) return <Navigate to="/feed" replace />;
   return (
-    <div className="screen-login">
-      <div className="login-head">
-        <h1 className="login-logo">Sorofy</h1>
-        <p className="login-tagline">
-          Música contada por personas, no por algoritmos. Descubre a tu ritmo.
-        </p>
+    <div className="hero">
+      <div className="hero-collage" aria-hidden="true">
+        {collageTiles.map(([from, to], i) => (
+          <div key={i} style={{ background: `linear-gradient(135deg,${from},${to})` }} />
+        ))}
       </div>
-      <a className="btn btn-primary" href={loginUrl()}>
-        <SpotifyIcon />
-        Entrar con Spotify
-      </a>
+      <div className="hero-inner">
+        <span className="nav-logo hero-logo">Sorofy</span>
+        <h1 className="hero-title">Música contada por personas, no por algoritmos.</h1>
+        <p className="hero-sub">
+          Guarda lo que te toca, cuenta por qué, y descubre a tu ritmo lo que tu
+          gente está escuchando de verdad. Sin likes, sin rankings, sin ansiedad.
+        </p>
+        <a className="btn btn-primary" href={loginUrl()}>
+          <SpotifyIcon />
+          Entrar con Spotify
+        </a>
+        <p className="note-track-date">Gratis. Tu música se queda en tu Spotify.</p>
+      </div>
     </div>
   );
 }
