@@ -6,6 +6,7 @@
    prototipo maquetaba y aquí es real (iframes, avatares, chat).
    ============================================================ */
 
+
 :root {
   /* --- Color base (neutra, para que los vibes canten) --- */
   --bg: #121212;            /* fondo de la app */
@@ -25,9 +26,7 @@
   --danger: #e0938a;        /* errores en línea, rojo suave (AA sobre --surface) */
   --danger-soft: rgba(224,147,138,0.12);
 
-  /* --- Vibes: 6 colores vivos que elige el usuario.
-     La paleta ejecutable vive en src/vibes.ts (el dato llega
-     como hex desde la BD); estos tokens la documentan. --- */
+  /* --- Vibes: 6 colores vivos que elige el usuario --- */
   --vibe-naranja: #f5a623;  --vibe-naranja-ink: #3a2a08;
   --vibe-azul:    #6fa8ff;  --vibe-azul-ink:    #0d1e3d;
   --vibe-lila:    #d98fe0;  --vibe-lila-ink:    #331039;
@@ -47,23 +46,18 @@
   --fs-note-xl: 1.5rem; /* nota en exhibición */
   --fs-body: 0.875rem;  /* UI general */
   --fs-meta: 0.8rem;    /* metadatos: susurros */
-
-  color-scheme: dark;
 }
 
 /* --- Base --- */
-* { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 button, select, input, textarea { font-family: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-s); }
 h1, h2, h3, p { margin: 0; }
-a { color: var(--text); text-decoration: none; }
-a:hover { color: var(--accent); }
 
 /* --- .btn --- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); border: none; cursor: pointer; border-radius: var(--r-pill); font-size: var(--fs-body); font-weight: 600; padding: 12px 22px; min-height: 44px; transition: background .15s ease, color .15s ease, opacity .15s ease; }
 .btn-primary { background: var(--accent); color: var(--accent-ink); }
-.btn-primary:hover { background: #b9d6b2; color: var(--accent-ink); }
+.btn-primary:hover { background: #b9d6b2; }
 .btn-primary:disabled { background: var(--surface-2); color: var(--muted-2); cursor: not-allowed; }
 .btn-ghost { background: transparent; color: var(--accent); border: 1px solid rgba(168,200,160,0.4); }
 .btn-ghost:hover { background: var(--accent-soft); }
@@ -77,7 +71,7 @@ a:hover { color: var(--accent); }
 .btn-danger-quiet.is-arming { background: var(--danger-soft); border-color: rgba(224,147,138,0.4); }
 
 /* --- .nav: barra superior de la app --- */
-.nav { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: rgba(18,18,18,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.nav { position: sticky; top: 41px; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: rgba(18,18,18,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .nav-logo { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
 .nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#556b52,#38473a); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
 
@@ -88,10 +82,13 @@ a:hover { color: var(--accent); }
 
 /* --- .note-card: la unidad central --- */
 .note-card { background: var(--surface); border-radius: var(--r-m); padding: var(--sp-5); display: flex; flex-direction: column; gap: 14px; }
+/* toda la tarjeta es clicable → detalle; los controles internos no navegan */
+.note-card[data-goto] { cursor: pointer; transition: background .15s ease, transform .15s ease, box-shadow .15s ease; }
+.note-card[data-goto]:hover { background: #232322; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
 .note-author { display: flex; align-items: center; gap: 10px; }
 .note-avatar { width: 26px; height: 26px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; color: var(--text); }
 .note-author-name { font-size: 0.85rem; font-weight: 600; color: #bdbdb6; }
-.note-text { font-size: var(--fs-note); line-height: 1.6; color: var(--text); text-wrap: pretty; white-space: pre-wrap; }
+.note-text { font-size: var(--fs-note); line-height: 1.6; color: var(--text); text-wrap: pretty; }
 /* La dedicatoria: por qué te llega esta nota. Íntima, no publicitaria. */
 .rec-line { font-size: var(--fs-meta); font-style: italic; }
 .rec-personal { color: var(--accent); }
@@ -105,8 +102,14 @@ a:hover { color: var(--accent); }
 .badge { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px 8px; }
 .note-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
 
-/* --- .vibe-chip (el color y la tinta los pone vibes.ts en línea) --- */
+/* --- .vibe-chip --- */
 .vibe-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; border-radius: var(--r-pill); padding: 5px 12px; width: fit-content; }
+.vibe-naranja { background: var(--vibe-naranja); color: var(--vibe-naranja-ink); }
+.vibe-azul    { background: var(--vibe-azul);    color: var(--vibe-azul-ink); }
+.vibe-lila    { background: var(--vibe-lila);    color: var(--vibe-lila-ink); }
+.vibe-coral   { background: var(--vibe-coral);   color: var(--vibe-coral-ink); }
+.vibe-verde   { background: var(--vibe-verde);   color: var(--vibe-verde-ink); }
+.vibe-amarillo{ background: var(--vibe-amarillo);color: var(--vibe-amarillo-ink); }
 
 /* --- .tag-chip: sensibilidades --- */
 .tag-chip { background: var(--surface-2); color: var(--text); border: 1px solid transparent; border-radius: var(--r-pill); padding: 10px 14px; min-height: 44px; font-size: var(--fs-body); cursor: pointer; transition: background .15s ease, border-color .15s ease; text-align: center; }
@@ -192,8 +195,10 @@ a:hover { color: var(--accent); }
 @keyframes sorofy-spin { to { transform: rotate(360deg); } }
 
 /* --- Layouts --- */
+.screen { display: none; }
+.screen.is-active { display: block; }
 .app-col { max-width: 640px; margin: 0 auto; padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
-.screen-login { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-6); padding: var(--sp-6) var(--sp-4); text-align: center; }
+.screen-login { min-height: 620px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-6); padding: var(--sp-6) var(--sp-4); text-align: center; }
 .login-logo { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; }
 .login-tagline { font-size: 1rem; line-height: 1.6; color: var(--muted); max-width: 320px; text-wrap: pretty; }
 .section-title { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
@@ -208,6 +213,20 @@ a:hover { color: var(--accent); }
   .app-col { padding: var(--sp-5) var(--sp-4); gap: var(--sp-5); }
   .chats-layout { display: grid; grid-template-columns: 240px 1fr; gap: var(--sp-5); align-items: start; }
 }
+/* --- Variedad de tarjetas del feed --- */
+/* los image-slot llenan el wrapper que les da tamaño (no-inlinable: viven dentro de x-import) */
+image-slot { display: block; width: 100%; height: 100%; }
+/* carátulas reales de prueba: el JS pone la imagen encima del degradado */
+.art { background-size: cover !important; background-position: center; }
+
+/* --- Portada de entrada: collage de carátulas + eslogan --- */
+.hero { position: relative; min-height: 640px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-collage { position: absolute; inset: -40px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; opacity: 0.35; transform: rotate(-4deg) scale(1.12); pointer-events: none; }
+.hero-collage > div { aspect-ratio: 1; border-radius: var(--r-s); }
+.hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(18,18,18,0.55) 0%, rgba(18,18,18,0.92) 78%); pointer-events: none; }
+.hero-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--sp-5); text-align: center; padding: var(--sp-6) var(--sp-4); max-width: 620px; }
+.hero-title { font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance; }
+.hero-sub { font-size: 1.05rem; line-height: 1.6; color: var(--muted); max-width: 440px; text-wrap: pretty; }
 
 /* --- Nav enriquecida: buscador + enlaces de sección --- */
 .nav-search { flex: 1; max-width: 360px; display: flex; align-items: center; gap: var(--sp-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 14px; color: var(--muted-2); font-size: var(--fs-meta); cursor: text; }
@@ -241,6 +260,16 @@ a:hover { color: var(--accent); }
 .vibe-cloud { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 @media (min-width: 700px) { .album-head { flex-direction: row; align-items: flex-end; gap: var(--sp-5); } }
 
+/* tracklist: sin números de plays; las notas de tu gente son la señal */
+.tracklist { display: flex; flex-direction: column; }
+.track-row { display: flex; align-items: center; gap: var(--sp-3); padding: 10px var(--sp-2); border-radius: var(--r-s); }
+.track-row:hover { background: var(--surface-2); }
+.track-num { width: 20px; flex: none; font-size: var(--fs-meta); color: var(--muted-2); text-align: right; font-variant-numeric: tabular-nums; }
+.track-name { flex: 1; min-width: 0; font-size: var(--fs-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-note-hint { font-size: 0.72rem; color: var(--muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; cursor: pointer; }
+.track-note-hint:hover { color: var(--accent); }
+.track-len { font-size: var(--fs-meta); color: var(--muted-2); font-variant-numeric: tabular-nums; flex: none; }
+
 /* rejilla inferior de la ficha: notas a la izquierda, contexto a la derecha */
 .album-cols { display: flex; flex-direction: column; gap: var(--sp-4); }
 @media (min-width: 1000px) { .album-cols { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: var(--sp-5); align-items: start; } }
@@ -252,6 +281,21 @@ a:hover { color: var(--accent); }
 .filmstrip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .filmstrip::-webkit-scrollbar { display: none; }
 .filmstrip > div { width: 48px; height: 48px; border-radius: 6px; flex: none; }
+
+/* --- Podio de la semana: tres queridos, sin cifras ni ansiedad --- */
+.podium-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+@media (min-width: 700px) { .podium-wrap { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.podium-panel { background: var(--surface); border-radius: var(--r-m); padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
+.podium-panel h3 { font-size: var(--fs-meta); color: var(--muted); font-weight: 600; margin: 0; }
+.podium { display: flex; align-items: flex-end; justify-content: center; gap: var(--sp-2); padding-top: var(--sp-2); min-width: 0; }
+.podium-step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-width: 0; max-width: 78px; text-align: center; cursor: pointer; }
+.podium-step .cover { width: 100%; max-width: 60px; aspect-ratio: 1; border-radius: var(--r-s); }
+.podium-step .cover.round { border-radius: 50%; }
+.podium-step.first { max-width: 96px; }
+.podium-step.first .cover { max-width: 84px; box-shadow: 0 0 0 2px rgba(168,200,160,0.6), 0 10px 28px rgba(0,0,0,0.45); }
+.podium-place { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; color: var(--muted-2); }
+.podium-step.first .podium-place { color: var(--accent); }
+.podium-name { font-size: 0.72rem; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 /* --- Perfil: cabecera con halo + tops con carátula --- */
 .profile-avatar-xl { width: 112px; height: 112px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 600; color: var(--text); box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px rgba(168,200,160,0.45), 0 18px 40px rgba(0,0,0,0.45); }
@@ -279,14 +323,13 @@ a:hover { color: var(--accent); }
 .listening-info span { display: block; font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
 @media (min-width: 1000px) {
-  /* la columna del panel solo existe si hay alguien escuchando */
-  .feed-layout.has-panel { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: var(--sp-5); }
-  .feed-layout.has-panel .feed-main { grid-column: 1; grid-row: 1; }
+  .feed-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; gap: var(--sp-5); }
+  .feed-main { grid-column: 1; grid-row: 1; }
   .listening-panel { grid-column: 2; grid-row: 1; }
   /* mosaico a dos columnas: tarjetas grandes y pequeñas conviven */
   .feed-masonry { display: block; columns: 2; column-gap: var(--sp-4); }
   .feed-masonry > .note-card { break-inside: avoid; margin-bottom: var(--sp-4); }
-  .listening-panel { position: sticky; top: 76px; }
+  .listening-panel { position: sticky; top: 116px; }
 }
 /* susurro de tipo, arriba de las tarjetas destacadas */
 .card-kicker { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); }
@@ -305,7 +348,8 @@ a:hover { color: var(--accent); }
 .felt-whisper { font-size: 0.75rem; color: var(--accent); font-style: italic; opacity: 0.85; }
 
 /* --- Hilo de conversación (un solo nivel de respuesta) --- */
-.thread { display: flex; flex-direction: column; gap: var(--sp-3); border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.thread { display: none; flex-direction: column; gap: var(--sp-3); border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.thread.is-open { display: flex; }
 .comment { display: flex; flex-direction: column; gap: 4px; }
 .comment-reply { margin-left: var(--sp-5); padding-left: var(--sp-3); border-left: 2px solid var(--line); }
 .comment-body { font-size: var(--fs-body); line-height: 1.55; margin: 0; }
@@ -313,7 +357,7 @@ a:hover { color: var(--accent); }
 .comment-act { background: none; border: none; padding: 2px 0; color: var(--muted-2); font-size: 0.72rem; font-weight: 600; cursor: pointer; }
 .comment-act:hover { color: var(--text); }
 .comment-act.is-felt { color: var(--accent); }
-.replying-hint { display: flex; align-items: center; gap: var(--sp-2); font-size: 0.75rem; color: var(--muted); }
+.replying-hint { display: none; align-items: center; gap: var(--sp-2); font-size: 0.75rem; color: var(--muted); }
 .reply-cancel { background: none; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 600; cursor: pointer; padding: 2px 4px; }
 .thread-input { display: flex; gap: var(--sp-2); align-items: center; }
 .thread-input input { flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); padding: 10px 16px; min-height: 40px; font-size: var(--fs-body); box-sizing: border-box; }
@@ -324,14 +368,95 @@ a:hover { color: var(--accent); }
 .btn-listen { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); font-size: 0.78rem; font-weight: 600; padding: 7px 14px; min-height: 34px; cursor: pointer; transition: color .15s ease, border-color .15s ease; }
 .btn-listen:hover { border-color: rgba(168,200,160,0.4); }
 .btn-listen.is-open { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.player-box { display: none; border-radius: var(--r-m); overflow: hidden; }
+.player-box.is-open { display: block; }
+/* En producción: iframe oficial de Spotify (152px canción / 352px álbum-artista),
+   YouTube 16:9 y widget de SoundCloud. Aquí, maquetas del mismo tamaño. */
+.sp-embed { background: #242423; border-radius: var(--r-m); padding: var(--sp-3); display: flex; gap: var(--sp-3); align-items: center; height: 152px; box-sizing: border-box; }
+.sp-embed.tall { height: 352px; align-items: flex-end; }
+.yt-embed { aspect-ratio: 16 / 9; background: #000; border-radius: var(--r-m); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.sc-embed { background: #2b2118; border-radius: var(--r-m); padding: var(--sp-3); display: flex; gap: var(--sp-3); align-items: center; height: 152px; box-sizing: border-box; }
+.sc-wave { flex: 1; display: flex; align-items: flex-end; gap: 2px; height: 44px; }
+.sc-wave i { flex: 1; background: rgba(255,138,112,0.55); border-radius: 1px; }
+.play-circle { width: 36px; height: 36px; flex: none; border-radius: 50%; background: #fff; color: #111; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+
+/* ============================================================
+   Pasada de acabado "salvia editorial": profundidad, luz y voz propia
+   ============================================================ */
+:root {
+  --font-note: 'Lora', Georgia, serif; /* la voz de la nota: serif de libreta de melómano */
+}
+/* fondo que respira: dos auras salvia casi imperceptibles + grano de papel */
+body {
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(168,200,160,0.07), transparent 60%),
+    radial-gradient(900px 700px at -12% 30%, rgba(168,200,160,0.04), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+body::before { content: ""; position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0.045; mix-blend-mode: overlay; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+::selection { background: rgba(168,200,160,0.3); }
+/* tipografía: la nota habla en serif; la UI calla en sans */
+.note-text { font-family: var(--font-note); font-size: calc(var(--fs-note) * 1.05); line-height: 1.62; }
+.nav-logo, .login-logo, .hero-title { font-family: var(--font-note); font-style: italic; font-weight: 500; letter-spacing: 0; }
+.album-title, .profile-name, .artist-name-xl, .onboarding-title { font-family: var(--font-note); font-weight: 500; }
+/* superficies con veladura, borde hairline y peso físico */
+.note-card, .panel, .listening-panel, .podium-panel, .top-list { background: linear-gradient(180deg, rgba(242,240,235,0.025), rgba(242,240,235,0) 42%), var(--surface); border: 1px solid rgba(234,234,234,0.06); }
+.note-card[data-goto]:hover { border-color: rgba(168,200,160,0.35); background: linear-gradient(180deg, rgba(168,200,160,0.05), rgba(168,200,160,0) 55%), var(--surface); }
+.shelf-cover, .note-cover, .listening-cover, .podium-step .cover, .result-cover, .top-row .cover, .album-cover-lg, .filmstrip > div { box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+.nav { backdrop-filter: blur(14px) saturate(1.4); border-bottom-color: rgba(168,200,160,0.12); }
+.nav-link.is-here, .nav-link:hover { background: rgba(234,234,234,0.05); }
+/* acciones con luz */
+.btn { transition: background .15s ease, color .15s ease, transform .1s ease, box-shadow .15s ease; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: linear-gradient(180deg, #b9d6b2, #a8c8a0); box-shadow: 0 6px 22px rgba(168,200,160,0.25), inset 0 1px 0 rgba(255,255,255,0.35); }
+.btn-primary:hover { background: linear-gradient(180deg, #c6dfc0, #b3d0ab); }
+.btn-primary:disabled { background: var(--surface-2); box-shadow: none; }
+.thread-send, .chat-send { box-shadow: 0 4px 14px rgba(168,200,160,0.3); }
+.now-playing .dot { box-shadow: 0 0 10px rgba(168,200,160,0.8); }
+.tag-chip.is-selected { box-shadow: 0 4px 16px rgba(168,200,160,0.18); }
+/* los vibes irradian su color: el único color fuerte lo pone la gente */
+.vibe-naranja { box-shadow: 0 4px 18px rgba(245,166,35,0.3); }
+.vibe-azul { box-shadow: 0 4px 18px rgba(111,168,255,0.3); }
+.vibe-lila { box-shadow: 0 4px 18px rgba(217,143,224,0.3); }
+.vibe-coral { box-shadow: 0 4px 18px rgba(255,138,112,0.3); }
+.vibe-verde { box-shadow: 0 4px 18px rgba(127,212,130,0.3); }
+.vibe-amarillo { box-shadow: 0 4px 18px rgba(239,211,93,0.3); }
+/* detalles */
+.field select:focus, .field input:focus, .field textarea:focus, .thread-input input:focus, .chat-input-row input:focus { border-color: rgba(168,200,160,0.5); outline: none; }
+.trust-box { background: linear-gradient(160deg, rgba(168,200,160,0.12), rgba(168,200,160,0.02) 70%), var(--surface); }
+.bubble-mine { box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+.back-link { transition: color .15s ease, gap .15s ease; }
+.back-link:hover { gap: 10px; }
+.spinner { border-top-color: var(--accent); }
+.hero-collage { opacity: 0.45; filter: saturate(1.15); }
+.hero::after { background: radial-gradient(ellipse at center, rgba(18,18,18,0.45) 0%, rgba(18,18,18,0.9) 80%); }
+.album-hero, .profile-head { position: relative; }
+.badge { background: rgba(234,234,234,0.03); }
+
+
+/* ================== FIN PORTABLE ================== */
 
 /* ============================================================
    Adaptación a la app real (lo que el prototipo solo maquetaba)
    ============================================================ */
 
+/* El prototipo alterna .thread/.player-box/.replying-hint con display:none
+   + .is-open; en React se montan solo cuando toca, así que aquí se ven siempre */
+.thread { display: flex; }
+.replying-hint { display: flex; }
+
+/* En el prototipo la nav quedaba bajo su barra de pantallas (41px) y las
+   "screens" median 620px; aquí la nav pega arriba y el login llena la ventana */
+.nav { top: 0; }
+.screen-login { min-height: 100vh; }
+
+/* Las notas reales traen saltos de línea */
+.note-text { white-space: pre-wrap; }
+
 /* Players de verdad: iframes de Spotify / YouTube / SoundCloud.
    El prototipo usaba maquetas (.sp-embed etc.); aquí, tamaños reales. */
-.player-box { border-radius: var(--r-m); overflow: hidden; }
+.player-box { display: block; border-radius: var(--r-m); overflow: hidden; }
 .player-box iframe { display: block; width: 100%; border: 0; }
 .player-box.video { aspect-ratio: 16 / 9; }
 .player-box.video iframe { height: 100%; }
