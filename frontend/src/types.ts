@@ -140,6 +140,22 @@ export interface MusicItem {
   province: string | null;
 }
 
+// Un item en la estantería del feed: solo lo justo para pintar la carátula
+export interface ShelfItem {
+  id: string;
+  type: "album" | "track" | "artist" | "localGroup";
+  name: string;
+  artistName: string | null;
+  imageUrl: string | null;
+  category: string | null;
+  province: string | null;
+}
+
+export interface Shelf {
+  weekly: ShelfItem[];
+  recent: ShelfItem[];
+}
+
 export interface Note {
   id: string;
   item: MusicItem;

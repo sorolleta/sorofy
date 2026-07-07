@@ -98,6 +98,20 @@ public class FeedService(
             .ToList();
     }
 
+    // La estantería del feed: de qué habla tu gente esta semana (6 carátulas,
+    // sin cifras) y qué se acaba de anotar en toda la app (la tira)
+    public async Task<ShelfData> GetShelfAsync(Guid userId)
+    {
+        var following = await follows.GetFollowingUsersAsync(userId);
+        var followingIds = following.Select(u => u.Id).ToList();
+
+        var weekly = await notes.GetMostNotedItemsByAuthorsAsync(
+            followingIds, DateTime.UtcNow.AddDays(-7), 6);
+        var recent = await notes.GetRecentlyNotedItemsAsync(12);
+
+        return new ShelfData(weekly, recent);
+    }
+
     public async Task<List<FeedItem>> GetNowPlayingFeedAsync(Guid userId)
     {
         var following = await follows.GetFollowingUsersAsync(userId);
@@ -140,6 +154,10 @@ public class FeedService(
 // trajo hasta este lector, o la provincia si es un grupo de su zona
 // (ambos null si llegó por círculo u horizonte normal)
 public record FeedNote(Note Note, string? BecauseArtist, string? BecauseProvince);
+
+// Los dos estantes sobre el feed: lo más comentado del círculo esta semana
+// y lo último anotado por cualquiera
+public record ShelfData(List<MusicItem> Weekly, List<MusicItem> Recent);
 
 public record FeedItem(Guid UserId, string DisplayName, string? AvatarUrl, NowPlayingInfo? NowPlaying);
 

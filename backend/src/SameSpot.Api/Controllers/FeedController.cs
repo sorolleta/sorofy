@@ -29,4 +29,27 @@ public class FeedController(FeedService feedService) : ControllerBase
     [HttpGet("now-playing")]
     public async Task<IActionResult> GetNowPlaying() =>
         Ok(await feedService.GetNowPlayingFeedAsync(User.GetUserId()));
+
+    // La estantería sobre el feed: carátulas, nunca cifras
+    [HttpGet("shelf")]
+    public async Task<IActionResult> GetShelf()
+    {
+        var shelf = await feedService.GetShelfAsync(User.GetUserId());
+        return Ok(new
+        {
+            Weekly = shelf.Weekly.Select(ItemToResponse),
+            Recent = shelf.Recent.Select(ItemToResponse),
+        });
+    }
+
+    private static object ItemToResponse(Models.MusicItem item) => new
+    {
+        item.Id,
+        Type = NotesController.TypeToString(item.Type),
+        item.Name,
+        item.ArtistName,
+        item.ImageUrl,
+        item.Category,
+        item.Province,
+    };
 }

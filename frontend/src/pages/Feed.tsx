@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { FeedEntry, FeedItem, NoteInteractions } from "../types";
+import type { FeedEntry, FeedItem, NoteInteractions, Shelf, ShelfItem } from "../types";
 import NoteCard from "../components/NoteCard";
 import { loadInteractions } from "../components/NoteInteractionsBar";
 
+// La carátula de un estante; los grupos locales no suelen tener imagen
+function ShelfCover({ item }: { item: ShelfItem }) {
+  if (item.imageUrl) return <img className="shelf-cover" src={item.imageUrl} alt="" />;
+  return (
+    <span className="shelf-cover cover-placeholder">
+      {item.type === "localGroup" ? "🎺" : "♪"}
+    </span>
+  );
+}
+
 export default function Feed() {
   const [entries, setEntries] = useState<FeedEntry[]>([]);
+  const [shelf, setShelf] = useState<Shelf | null>(null);
   const [listening, setListening] = useState<FeedItem[]>([]);
   const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
   const [interactions, setInteractions] = useState<Map<string, NoteInteractions>>(new Map());
@@ -22,6 +33,7 @@ export default function Feed() {
       loadInteractions(f.map((e) => e.note.id)).then(setInteractions).catch(() => {});
     });
     api.get<string[]>("/api/discoveries/mine").then((ids) => setSavedItems(new Set(ids)));
+    api.get<Shelf>("/api/feed/shelf").then(setShelf).catch(() => {});
 
     const loadListening = () =>
       api.get<FeedItem[]>("/api/feed/now-playing").then(setListening).catch(() => {});
@@ -65,6 +77,46 @@ export default function Feed() {
   }
 
   return (
+    <>
+      {shelf && shelf.weekly.length > 0 && (
+        <div className="shelf">
+          <div className="shelf-head">
+            <h2 className="section-title">De lo que habla tu gente esta semana</h2>
+            <span className="note-track-date">sin rankings — solo notas</span>
+          </div>
+          <div className="shelf-row">
+            {shelf.weekly.map((item) => (
+              <Link key={item.id} to={`/musica/${item.id}`} className="shelf-item">
+                <ShelfCover item={item} />
+                <span className="shelf-title">{item.name}</span>
+                <span className="shelf-sub">{item.artistName ?? item.category ?? ""}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {shelf && shelf.recent.length > 0 && (
+        <div className="shelf">
+          <div className="shelf-head">
+            <h2 className="section-title shelf-title-sm">Recién anotado…</h2>
+          </div>
+          <div className="filmstrip">
+            {shelf.recent.map((item) => (
+              <Link key={item.id} to={`/musica/${item.id}`} title={item.name}>
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.name} />
+                ) : (
+                  <span className="cover-placeholder">
+                    {item.type === "localGroup" ? "🎺" : "♪"}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
     <div className={`feed-layout${nowListening.length > 0 ? " has-panel" : ""}`}>
       <div className="feed-main">
         {error && <p className="error">{error}</p>}
@@ -121,5 +173,6 @@ export default function Feed() {
         </aside>
       )}
     </div>
+    </>
   );
 }

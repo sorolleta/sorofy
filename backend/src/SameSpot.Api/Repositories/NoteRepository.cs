@@ -71,6 +71,48 @@ public class NoteRepository(AppDbContext db) : INoteRepository
             .Select(n => n.Id)
             .ToListAsync();
 
+    // La estantería semanal: los items de los que más habla el círculo,
+    // por número de notas (el ranking existe, pero nunca se muestra)
+    public async Task<List<MusicItem>> GetMostNotedItemsByAuthorsAsync(
+        List<Guid> authorIds, DateTime since, int limit)
+    {
+        var rankedIds = await db.Notes
+            .Where(n => authorIds.Contains(n.UserId) && n.CreatedAt >= since)
+            .GroupBy(n => n.MusicItemId)
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => g.Max(n => n.CreatedAt))
+            .Take(limit)
+            .Select(g => g.Key)
+            .ToListAsync();
+
+        return await GetItemsPreservingOrderAsync(rankedIds);
+    }
+
+    // La tira "recién anotado": los últimos items sobre los que alguien
+    // escribió, sin repetir item
+    public async Task<List<MusicItem>> GetRecentlyNotedItemsAsync(int limit)
+    {
+        var recentIds = await db.Notes
+            .GroupBy(n => n.MusicItemId)
+            .OrderByDescending(g => g.Max(n => n.CreatedAt))
+            .Take(limit)
+            .Select(g => g.Key)
+            .ToListAsync();
+
+        return await GetItemsPreservingOrderAsync(recentIds);
+    }
+
+    // Contains no garantiza el orden: se recolocan según la lista de ids
+    private async Task<List<MusicItem>> GetItemsPreservingOrderAsync(List<Guid> orderedIds)
+    {
+        var items = await db.MusicItems
+            .Where(i => orderedIds.Contains(i.Id))
+            .ToListAsync();
+        return orderedIds
+            .Select(id => items.First(i => i.Id == id))
+            .ToList();
+    }
+
     public Task AddAsync(Note note) => db.Notes.AddAsync(note).AsTask();
 
     public void Remove(Note note) => db.Notes.Remove(note);
