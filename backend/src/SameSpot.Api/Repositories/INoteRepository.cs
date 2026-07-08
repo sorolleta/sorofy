@@ -7,6 +7,7 @@ public interface INoteRepository
     Task<List<Note>> GetByUserAsync(Guid userId);
     Task<List<Note>> GetByItemAsync(Guid musicItemId);
     Task<Note?> GetByIdAsync(Guid id);
+    Task<Note?> GetByIdWithAuthorAsync(Guid id);
     Task<List<Note>> GetRecentByAuthorsAsync(List<Guid> authorIds, int limit);
     Task<List<Note>> GetRecentExcludingAuthorsAsync(List<Guid> excludedAuthorIds, int limit);
     Task<List<Note>> GetRecentAnchoredForArtistsAsync(

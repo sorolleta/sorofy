@@ -10,6 +10,7 @@ import UserDetail from "./pages/UserDetail";
 import Feed from "./pages/Feed";
 import Notes from "./pages/Notes";
 import MusicItemDetail from "./pages/MusicItemDetail";
+import NoteDetail from "./pages/NoteDetail";
 import Chats from "./pages/Chats";
 import ChatThread from "./pages/ChatThread";
 
@@ -133,6 +134,7 @@ export default function App() {
         <Route path="/feed" element={<Layout wide><Feed /></Layout>} />
         <Route path="/notas" element={<Layout><Notes /></Layout>} />
         <Route path="/musica/:id" element={<Layout><MusicItemDetail /></Layout>} />
+        <Route path="/nota/:id" element={<Layout wide><NoteDetail /></Layout>} />
         {/* La ruta vieja de reseñas lleva a las notas, su sucesora */}
         <Route path="/resenas" element={<Navigate to="/notas" replace />} />
         <Route path="/chats" element={<Layout><Chats /></Layout>} />

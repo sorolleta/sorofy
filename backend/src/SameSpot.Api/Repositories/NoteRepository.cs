@@ -16,6 +16,11 @@ public class NoteRepository(AppDbContext db) : INoteRepository
     public Task<Note?> GetByIdAsync(Guid id) =>
         db.Notes.Include(n => n.MusicItem).FirstOrDefaultAsync(n => n.Id == id);
 
+    // La página de detalle necesita además quién la escribió
+    public Task<Note?> GetByIdWithAuthorAsync(Guid id) =>
+        db.Notes.Include(n => n.MusicItem).Include(n => n.User)
+            .FirstOrDefaultAsync(n => n.Id == id);
+
     // La ficha de un item: todas las notas de todo el mundo sobre él
     public Task<List<Note>> GetByItemAsync(Guid musicItemId) =>
         db.Notes.Include(n => n.MusicItem).Include(n => n.User)

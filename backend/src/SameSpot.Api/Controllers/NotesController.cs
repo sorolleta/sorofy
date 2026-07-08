@@ -87,6 +87,20 @@ public class NotesController(
         return Ok(mine.Select(ToResponse));
     }
 
+    // La página de detalle de una nota: la nota y quién la escribió
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetDetail(Guid id)
+    {
+        var note = await notes.GetByIdWithAuthorAsync(id);
+        if (note is null) return NotFound();
+
+        return Ok(new
+        {
+            Author = new { note.User.Id, note.User.DisplayName, note.User.AvatarUrl },
+            Note = ToResponse(note),
+        });
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, UpdateNoteRequest request)
     {

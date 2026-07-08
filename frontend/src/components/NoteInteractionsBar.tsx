@@ -1,10 +1,12 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { api, getMyUserId } from "../api";
 import type { CommentThread, NoteCommentData, NoteInteractions } from "../types";
 
 interface Props {
   noteId: string;
   interactions: NoteInteractions;
+  // La página de detalle enseña la conversación ya desplegada
+  startOpen?: boolean;
 }
 
 // Estado de lector de todas las notas de una pantalla en una sola llamada
@@ -27,14 +29,21 @@ function formatLikedBy(names: string[]): string {
 // manifiesto: sin contadores públicos — el corazón solo guarda tu gesto,
 // los nombres solo los ve el autor y de la conversación solo se señala
 // que existe.
-export default function NoteInteractionsBar({ noteId, interactions }: Props) {
+export default function NoteInteractionsBar({ noteId, interactions, startOpen }: Props) {
   const isMine = interactions.likedBy !== null;
   const [liked, setLiked] = useState(interactions.likedByMe);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen ?? false);
   const [thread, setThread] = useState<CommentThread[] | null>(null);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<CommentThread | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (startOpen) {
+      loadThread().catch(() => setError("No se pudo cargar el hilo"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleLike = async () => {
     setError("");

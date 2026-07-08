@@ -100,7 +100,12 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
         </>
       )}
 
-      {note.text && <p className="note-text">{note.text}</p>}
+      {/* El texto lleva a la página de la nota, donde vive la conversación */}
+      {note.text && (
+        <Link to={`/nota/${note.id}`} className="note-text-link">
+          <p className="note-text">{note.text}</p>
+        </Link>
+      )}
       {note.vibeLabel && vibe && (
         <span className="vibe-chip" style={{ background: vibe.hex, color: vibe.ink }}>
           {note.vibeEmoji && <span>{note.vibeEmoji}</span>}
