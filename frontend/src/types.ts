@@ -3,6 +3,7 @@ export interface TopArtist {
   name: string;
   genres: string[];
   rank: number;
+  imageUrl: string | null;
 }
 
 export interface TopTrack {
@@ -10,6 +11,10 @@ export interface TopTrack {
   name: string;
   artistName: string;
   rank: number;
+  // Carátula y álbum de origen: de aquí sale el podio de álbumes
+  imageUrl: string | null;
+  albumSpotifyId: string | null;
+  albumName: string | null;
 }
 
 export interface MyProfile {

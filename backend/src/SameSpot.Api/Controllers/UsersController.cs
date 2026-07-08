@@ -83,8 +83,12 @@ public class UsersController(
             // El contador de confianza privado del manifiesto: cuántas
             // canciones guardé gracias a las notas de esta persona
             TrustCount = await discoveries.CountByAuthorAsync(User.GetUserId(), id),
-            TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank }),
-            TopTracks = topTracks.Select(t => new { t.SpotifyTrackId, t.Name, t.ArtistName, t.Rank }),
+            TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank, a.ImageUrl }),
+            TopTracks = topTracks.Select(t => new
+            {
+                t.SpotifyTrackId, t.Name, t.ArtistName, t.Rank,
+                t.ImageUrl, t.AlbumSpotifyId, t.AlbumName,
+            }),
         });
     }
 

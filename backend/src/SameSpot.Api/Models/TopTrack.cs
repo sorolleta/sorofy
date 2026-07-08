@@ -9,6 +9,12 @@ public class TopTrack
     public required string SpotifyTrackId { get; set; }
     public required string Name { get; set; }
     public required string ArtistName { get; set; }
+
+    // Carátula y álbum de origen: la carátula viste tops y podio, y del
+    // álbum salen los "álbumes más queridos" (Spotify no da tops de álbum)
+    public string? ImageUrl { get; set; }
+    public string? AlbumSpotifyId { get; set; }
+    public string? AlbumName { get; set; }
     public int Rank { get; set; }
     public DateTime FetchedAt { get; set; }
 }

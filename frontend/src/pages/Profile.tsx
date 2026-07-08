@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, getMyUserId } from "../api";
 import type { MyProfile, NowPlaying, Note, UserProfile } from "../types";
 import TopsPanel from "../components/TopsPanel";
+import Podium from "../components/Podium";
 import NoteList from "../components/NoteList";
 
 export default function Profile() {
@@ -98,6 +99,8 @@ export default function Profile() {
           </span>
         </div>
       )}
+
+      <Podium artists={profile.topArtists} tracks={profile.topTracks} />
 
       <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
 

@@ -35,8 +35,12 @@ public class MeController(
             user.Province,
             Tags = user.Tags.Select(t => t.Name),
             NeedsOnboarding = user.OnboardingCompletedAt is null,
-            TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank }),
-            TopTracks = topTracks.Select(t => new { t.SpotifyTrackId, t.Name, t.ArtistName, t.Rank }),
+            TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank, a.ImageUrl }),
+            TopTracks = topTracks.Select(t => new
+            {
+                t.SpotifyTrackId, t.Name, t.ArtistName, t.Rank,
+                t.ImageUrl, t.AlbumSpotifyId, t.AlbumName,
+            }),
             LastSync = topArtists.FirstOrDefault()?.FetchedAt,
         });
     }
@@ -57,6 +61,7 @@ public class MeController(
             SpotifyArtistId = a.Id,
             Name = a.Name,
             Genres = a.Genres ?? [],
+            ImageUrl = a.Images?.FirstOrDefault()?.Url,
             Rank = i + 1,
             FetchedAt = fetchedAt,
         }).ToList();
@@ -67,6 +72,9 @@ public class MeController(
             SpotifyTrackId = t.Id,
             Name = t.Name,
             ArtistName = string.Join(", ", t.Artists.Select(a => a.Name)),
+            ImageUrl = t.Album?.Images?.FirstOrDefault()?.Url,
+            AlbumSpotifyId = t.Album?.Id,
+            AlbumName = t.Album?.Name,
             Rank = i + 1,
             FetchedAt = fetchedAt,
         }).ToList();

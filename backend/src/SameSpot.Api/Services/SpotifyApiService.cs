@@ -17,9 +17,10 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
         return response?.Items ?? [];
     }
 
-    public async Task<List<SpotifyTrackDto>> GetTopTracksAsync(Guid userId)
+    // Con álbum incluido: de ahí salen la carátula y los "álbumes más queridos"
+    public async Task<List<SpotifyFullTrackDto>> GetTopTracksAsync(Guid userId)
     {
-        var response = await GetAsync<SpotifyPage<SpotifyTrackDto>>(
+        var response = await GetAsync<SpotifyPage<SpotifyFullTrackDto>>(
             userId, $"https://api.spotify.com/v1/me/top/tracks?limit={TopLimit}&time_range=medium_term");
         return response?.Items ?? [];
     }
@@ -126,7 +127,8 @@ public record SpotifyPage<T>([property: JsonPropertyName("items")] List<T> Items
 public record SpotifyArtistDto(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("name")] string Name,
-    [property: JsonPropertyName("genres")] List<string>? Genres);
+    [property: JsonPropertyName("genres")] List<string>? Genres,
+    [property: JsonPropertyName("images")] List<SpotifyImageDto>? Images);
 
 public record SpotifyTrackDto(
     [property: JsonPropertyName("id")] string Id,

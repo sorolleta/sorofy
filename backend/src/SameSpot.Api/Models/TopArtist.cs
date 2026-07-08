@@ -9,6 +9,9 @@ public class TopArtist
     public required string SpotifyArtistId { get; set; }
     public required string Name { get; set; }
     public List<string> Genres { get; set; } = [];
+
+    // Foto del artista, para tops y podio del perfil
+    public string? ImageUrl { get; set; }
     public int Rank { get; set; }
     public DateTime FetchedAt { get; set; }
 }

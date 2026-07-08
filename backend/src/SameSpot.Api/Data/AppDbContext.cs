@@ -57,6 +57,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<TopTrack>()
             .HasIndex(t => new { t.UserId, t.Rank });
 
+        modelBuilder.Entity<TopArtist>()
+            .Property(a => a.ImageUrl)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<TopTrack>()
+            .Property(t => t.ImageUrl)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<TopTrack>()
+            .Property(t => t.AlbumSpotifyId)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<TopTrack>()
+            .Property(t => t.AlbumName)
+            .HasMaxLength(200);
+
         // Un item de Spotify existe una sola vez en la tabla; los grupos
         // locales (SpotifyId null) quedan fuera del índice
         modelBuilder.Entity<MusicItem>()
