@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, getMyUserId } from "../api";
 import type { MyProfile, NowPlaying, Note, UserProfile } from "../types";
+import { useNavigate } from "react-router-dom";
 import TopsPanel from "../components/TopsPanel";
-import Podium from "../components/Podium";
+import Trio from "../components/Trio";
 import NoteList from "../components/NoteList";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -64,9 +66,11 @@ export default function Profile() {
           <h1 className="profile-name profile-name-xl">{profile.displayName}</h1>
           <p className="profile-sub">
             {profile.province ? `${profile.province} · ` : ""}
-            {profile.lastSync
-              ? `última sincronización ${new Date(profile.lastSync).toLocaleDateString()}`
-              : "aún no has importado tu música"}
+            en Sorofy desde{" "}
+            {new Date(profile.createdAt).toLocaleDateString("es-ES", {
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
         {profile.tags.length > 0 && (
@@ -87,6 +91,10 @@ export default function Profile() {
           <button className="btn btn-quiet btn-sm" onClick={sync} disabled={syncing}>
             {syncing ? "Sincronizando…" : "Sincronizar con Spotify"}
           </button>
+          {/* El mismo onboarding sirve para editar: repetirlo reemplaza */}
+          <button className="btn btn-quiet btn-sm" onClick={() => navigate("/onboarding")}>
+            Editar perfil
+          </button>
         </div>
       </header>
 
@@ -100,17 +108,23 @@ export default function Profile() {
         </div>
       )}
 
-      <Podium artists={profile.topArtists} tracks={profile.topTracks} />
+      <Trio artists={profile.topArtists} tracks={profile.topTracks} />
 
-      <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
-
-      <div className="page-head">
-        <h2 className="section-title">Mi bitácora</h2>
-        <p className="section-sub">
-          Las notas se escriben y editan desde <Link to="/notas" className="accent">Notas</Link>.
-        </p>
+      <div className="profile-section">
+        <TopsPanel artists={profile.topArtists} tracks={profile.topTracks} />
       </div>
-      <NoteList notes={notes} />
+
+      <div className="profile-section">
+        <div className="page-head">
+          <h2 className="section-title">Mi bitácora</h2>
+          <p className="section-sub">
+            Lo que has ido anotando, sin presentarte a ti mismo — aquí ya sabes
+            quién eres. Se escribe y edita desde{" "}
+            <Link to="/notas" className="accent">Notas</Link>.
+          </p>
+        </div>
+        <NoteList notes={notes} />
+      </div>
     </>
   );
 }
