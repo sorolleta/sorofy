@@ -6,6 +6,12 @@
 # dotenv files
 .env
 
+# Fotos de grupos locales subidas en local (no son código fuente)
+backend/src/SameSpot.Api/wwwroot/uploads/
+
+# Configuración local de herramientas
+.claude/
+
 # User-specific files
 *.rsuser
 *.suo

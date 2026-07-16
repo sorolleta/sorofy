@@ -7,6 +7,7 @@ namespace SameSpot.Api.Services;
 // FeedRanker y la franja de "qué están escuchando ahora" los seguidos.
 public class FeedService(
     IFollowRepository follows,
+    IGroupFollowRepository groupFollows,
     INoteRepository notes,
     IDiscoveryRepository discoveries,
     ITopItemsRepository tops,
@@ -47,6 +48,13 @@ public class FeedService(
             : await notes.GetRecentLocalForProvinceAsync(
                 myProvince, excludedAuthors, HorizonLimit);
 
+        // Grupos locales que sigues: sus notas te llegan aunque no sigas a
+        // quien las escribió, igual que si fuera un usuario seguido
+        var followedGroupIds = await groupFollows.GetFollowedGroupIdsAsync(userId);
+        List<Note> groupHorizon = followedGroupIds.Count == 0
+            ? []
+            : await notes.GetRecentForMusicItemsAsync(followedGroupIds, excludedAuthors, HorizonLimit);
+
         var generalHorizon = await notes.GetRecentExcludingAuthorsAsync(
             excludedAuthors, HorizonLimit);
 
@@ -58,6 +66,8 @@ public class FeedService(
         var anchoredIds = anchoredHorizon.Select(n => n.Id).ToHashSet();
         var targeted = anchoredHorizon
             .Concat(localHorizon.Where(n => !anchoredIds.Contains(n.Id)))
+            .Concat(groupHorizon.Where(n => !anchoredIds.Contains(n.Id)))
+            .DistinctBy(n => n.Id)
             .ToList();
         var targetedIds = targeted.Select(n => n.Id).ToHashSet();
         var horizon = targeted
@@ -81,14 +91,19 @@ public class FeedService(
 
         var ranked = ranker.Rank(candidates, horizon, DateTime.UtcNow);
 
+        var followedGroupIdSet = followedGroupIds.ToHashSet();
+
         // La explicación de la tarjeta: el ancla que coincide con tus tops
-        // manda; si no, la cercanía ("grupo de tu provincia")
+        // manda; luego el grupo que sigues; si no, la cercanía ("de tu provincia")
         return ranked
             .Select(n => new FeedNote(
                 n,
                 BecauseArtist: n.AnchorArtistSpotifyId is not null
                     && myTopArtistIds.Contains(n.AnchorArtistSpotifyId)
                     ? n.AnchorArtistName
+                    : null,
+                BecauseFollowedGroup: followedGroupIdSet.Contains(n.MusicItemId)
+                    ? n.MusicItem.Name
                     : null,
                 BecauseProvince: n.MusicItem.Type == MusicItemType.LocalGroup
                     && myProvince is not null
@@ -151,9 +166,9 @@ public class FeedService(
 }
 
 // Una nota del feed con su explicación opcional: el artista ancla que la
-// trajo hasta este lector, o la provincia si es un grupo de su zona
-// (ambos null si llegó por círculo u horizonte normal)
-public record FeedNote(Note Note, string? BecauseArtist, string? BecauseProvince);
+// trajo hasta este lector, el grupo local que sigue, o la provincia si es
+// un grupo de su zona (todos null si llegó por círculo u horizonte normal)
+public record FeedNote(Note Note, string? BecauseArtist, string? BecauseFollowedGroup, string? BecauseProvince);
 
 // Los dos estantes sobre el feed: lo más comentado del círculo esta semana
 // y lo último anotado por cualquiera

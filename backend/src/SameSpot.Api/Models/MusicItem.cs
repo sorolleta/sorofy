@@ -32,6 +32,16 @@ public class MusicItem
     public string? Category { get; set; }
     public string? Province { get; set; }
 
+    // Quién dio de alta el grupo local (null en items de Spotify, y en los
+    // grupos creados antes de este campo). Alimenta el badge "ficha de la
+    // comunidad" y oculta el botón de reclamar a su propio creador.
+    public Guid? CreatedByUserId { get; set; }
+    public User? CreatedByUser { get; set; }
+
+    // Solo grupos locales: lo que no falla en ningún pueblo, separado por
+    // comas. Texto simple porque no se filtra ni se interactúa por canción.
+    public string? Repertoire { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }
 

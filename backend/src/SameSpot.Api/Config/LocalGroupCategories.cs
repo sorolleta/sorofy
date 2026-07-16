@@ -7,6 +7,7 @@ public static class LocalGroupCategories
     public static readonly string[] All =
     [
         "Charanga",
+        "Peña",
         "Banda de música",
         "Orquesta de verbena",
         "Grupo",
