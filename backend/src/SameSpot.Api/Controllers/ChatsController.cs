@@ -10,7 +10,8 @@ namespace SameSpot.Api.Controllers;
 [Route("api/chats")]
 public class ChatsController(
     IMessageRepository messages,
-    IUserRepository users) : ControllerBase
+    IUserRepository users,
+    IConversationReadRepository reads) : ControllerBase
 {
     private const int HistoryLimit = 100;
 
@@ -30,12 +31,18 @@ public class ChatsController(
             if (partner is null) continue;
 
             var last = group.First();
+            // No leído solo si el último mensaje es suyo y llegó después
+            // de la última vez que abrí esta conversación
+            var lastRead = await reads.GetLastReadAsync(myId, group.Key);
+            var hasUnread = last.SenderId != myId && (lastRead is null || last.SentAt > lastRead);
+
             result.Add(new
             {
                 UserId = partner.Id,
                 partner.DisplayName,
                 partner.AvatarUrl,
                 LastMessage = new { last.Text, last.SentAt, FromMe = last.SenderId == myId },
+                HasUnread = hasUnread,
             });
         }
         return Ok(result);
@@ -53,6 +60,8 @@ public class ChatsController(
         if (await users.GetByIdAsync(userId) is null) return NotFound();
 
         var conversation = await messages.GetConversationAsync(myId, userId, HistoryLimit);
+        // Abrir la conversación es leerla: se limpia el punto de no leído
+        await reads.MarkReadAsync(myId, userId);
         return Ok(conversation.Select(m => new
         {
             m.Id,

@@ -38,7 +38,11 @@ export default function Chats() {
       </div>
       <div className="panel people-panel">
         {conversations.map((c) => (
-          <Link key={c.userId} to={`/chats/${c.userId}`} className="chat-row">
+          <Link
+            key={c.userId}
+            to={`/chats/${c.userId}`}
+            className={`chat-row${c.hasUnread ? " chat-row-unread" : ""}`}
+          >
             {c.avatarUrl ? (
               <img className="person-avatar" src={c.avatarUrl} alt="" />
             ) : (
@@ -54,6 +58,7 @@ export default function Chats() {
               </span>
             </span>
             <span className="chat-time">
+              {c.hasUnread && <span className="chat-unread-dot" aria-label="Sin leer" />}
               {new Date(c.lastMessage.sentAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
