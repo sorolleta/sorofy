@@ -24,6 +24,15 @@ public class NoteCommentRepository(AppDbContext db) : INoteCommentRepository
             .Distinct()
             .ToListAsync();
 
+    // Para Ecos: comentarios recientes en notas suyas (nunca los que él mismo escribió)
+    public Task<List<NoteComment>> GetRecentReceivedAsync(Guid authorId, int limit) =>
+        db.NoteComments.Where(c => c.Note.UserId == authorId && c.UserId != authorId)
+            .Include(c => c.User)
+            .Include(c => c.Note).ThenInclude(n => n.MusicItem)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
     public Task AddAsync(NoteComment comment) => db.NoteComments.AddAsync(comment).AsTask();
 
     public void Remove(NoteComment comment) => db.NoteComments.Remove(comment);

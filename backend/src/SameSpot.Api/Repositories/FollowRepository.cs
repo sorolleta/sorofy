@@ -25,6 +25,14 @@ public class FollowRepository(AppDbContext db) : IFollowRepository
             .Select(f => f.Following)
             .ToListAsync();
 
+    // Para Ecos: quién ha empezado a seguirte hace poco
+    public Task<List<Follow>> GetRecentFollowersAsync(Guid userId, int limit) =>
+        db.Follows.Where(f => f.FollowingId == userId)
+            .Include(f => f.Follower)
+            .OrderByDescending(f => f.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
     public Task<int> CountFollowersAsync(Guid userId) =>
         db.Follows.CountAsync(f => f.FollowingId == userId);
 

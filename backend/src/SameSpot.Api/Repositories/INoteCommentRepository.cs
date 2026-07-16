@@ -7,6 +7,7 @@ public interface INoteCommentRepository
     Task<NoteComment?> GetByIdAsync(Guid id);
     Task<List<NoteComment>> GetThreadAsync(Guid noteId);
     Task<List<Guid>> GetNoteIdsWithCommentsAsync(List<Guid> noteIds);
+    Task<List<NoteComment>> GetRecentReceivedAsync(Guid authorId, int limit);
     Task AddAsync(NoteComment comment);
     void Remove(NoteComment comment);
 

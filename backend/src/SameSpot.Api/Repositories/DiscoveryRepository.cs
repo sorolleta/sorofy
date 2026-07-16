@@ -19,6 +19,22 @@ public class DiscoveryRepository(AppDbContext db) : IDiscoveryRepository
     public Task<int> CountByAuthorAsync(Guid userId, Guid authorId) =>
         db.Discoveries.CountAsync(d => d.UserId == userId && d.AuthorId == authorId);
 
+    // Para Ecos: quién guardó algo gracias a sus notas
+    public Task<List<Discovery>> GetRecentByAuthorAsync(Guid authorId, int limit) =>
+        db.Discoveries.Where(d => d.AuthorId == authorId && d.UserId != authorId)
+            .Include(d => d.User)
+            .Include(d => d.MusicItem)
+            .OrderByDescending(d => d.SavedAt)
+            .Take(limit)
+            .ToListAsync();
+
+    // Para "en tu círculo" en la ficha: quién de mi gente ya lo tiene guardado
+    public Task<List<Discovery>> GetByItemAsync(Guid musicItemId) =>
+        db.Discoveries.Where(d => d.MusicItemId == musicItemId)
+            .Include(d => d.User)
+            .OrderBy(d => d.SavedAt)
+            .ToListAsync();
+
     public Task AddAsync(Discovery discovery) => db.Discoveries.AddAsync(discovery).AsTask();
 
     public Task SaveChangesAsync() => db.SaveChangesAsync();

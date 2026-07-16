@@ -23,6 +23,15 @@ public class NoteLikeRepository(AppDbContext db) : INoteLikeRepository
             .OrderBy(l => l.CreatedAt)
             .ToListAsync();
 
+    // Para Ecos: los últimos "me llega" que ha recibido (nunca los suyos propios)
+    public Task<List<NoteLike>> GetRecentReceivedAsync(Guid authorId, int limit) =>
+        db.NoteLikes.Where(l => l.Note.UserId == authorId && l.UserId != authorId)
+            .Include(l => l.User)
+            .Include(l => l.Note).ThenInclude(n => n.MusicItem)
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
     public Task AddAsync(NoteLike like) => db.NoteLikes.AddAsync(like).AsTask();
 
     public void Remove(NoteLike like) => db.NoteLikes.Remove(like);

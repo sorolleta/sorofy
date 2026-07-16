@@ -18,6 +18,9 @@ public class User
     public DateTime? OnboardingCompletedAt { get; set; }
     public List<Tag> Tags { get; set; } = [];
 
+    // Última vez que abrió Ecos: todo lo posterior es "no leído"
+    public DateTime? LastEcosReadAt { get; set; }
+
     public SpotifyToken? SpotifyToken { get; set; }
 
     public List<TopArtist> TopArtists { get; set; } = [];
