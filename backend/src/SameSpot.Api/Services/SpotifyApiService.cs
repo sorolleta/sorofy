@@ -59,6 +59,15 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
             userId, $"https://api.spotify.com/v1/artists/{Uri.EscapeDataString(artistId)}");
     }
 
+    // Los discos de un artista, para el panel "Más de X" de su ficha
+    public async Task<List<SpotifyAlbumDto>> GetArtistAlbumsAsync(Guid userId, string artistId, int limit)
+    {
+        var response = await GetItemOrNullAsync<SpotifyPage<SpotifyAlbumDto>>(
+            userId,
+            $"https://api.spotify.com/v1/artists/{Uri.EscapeDataString(artistId)}/albums?include_groups=album&limit={limit}");
+        return response?.Items ?? [];
+    }
+
     // La playlist privada "Mis Descubrimientos": se crea una vez por usuario
     public async Task<string> CreatePlaylistAsync(Guid userId, string name, string description)
     {
@@ -156,14 +165,26 @@ public record SpotifyAlbumDto(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("artists")] List<SpotifyArtistBriefDto> Artists,
-    [property: JsonPropertyName("images")] List<SpotifyImageDto>? Images);
+    [property: JsonPropertyName("images")] List<SpotifyImageDto>? Images,
+    // Solo llegan al pedir el álbum individual (la ficha los usa)
+    [property: JsonPropertyName("release_date")] string? ReleaseDate,
+    [property: JsonPropertyName("total_tracks")] int? TotalTracks,
+    [property: JsonPropertyName("tracks")] SpotifyPage<SpotifyAlbumTrackDto>? Tracks);
+
+// Una pista dentro de un álbum (la respuesta del álbum no repite el álbum)
+public record SpotifyAlbumTrackDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("track_number")] int TrackNumber,
+    [property: JsonPropertyName("duration_ms")] int DurationMs);
 
 // Como SpotifyTrackDto pero con el álbum, del que sacamos la carátula
 public record SpotifyFullTrackDto(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("artists")] List<SpotifyArtistBriefDto> Artists,
-    [property: JsonPropertyName("album")] SpotifyAlbumDto? Album);
+    [property: JsonPropertyName("album")] SpotifyAlbumDto? Album,
+    [property: JsonPropertyName("duration_ms")] int? DurationMs);
 
 public record SpotifyImageDto([property: JsonPropertyName("url")] string Url);
 

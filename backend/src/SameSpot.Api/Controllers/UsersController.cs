@@ -56,6 +56,7 @@ public class UsersController(
                 user.Id,
                 user.DisplayName,
                 user.AvatarUrl,
+                user.Province,
                 IsFollowedByMe = await follows.ExistsAsync(myId, user.Id),
             });
         }
@@ -77,8 +78,9 @@ public class UsersController(
             user.Id,
             user.DisplayName,
             user.AvatarUrl,
-            Followers = await follows.CountFollowersAsync(id),
-            Following = await follows.CountFollowingAsync(id),
+            user.Province,
+            FollowersCount = await follows.CountFollowersAsync(id),
+            FollowingCount = await follows.CountFollowingAsync(id),
             IsFollowedByMe = await follows.ExistsAsync(User.GetUserId(), id),
             // El contador de confianza privado del manifiesto: cuántas
             // canciones guardé gracias a las notas de esta persona

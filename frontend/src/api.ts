@@ -93,4 +93,6 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>(path, withJsonBody("POST", body)),
   put: <T>(path: string, body?: unknown) => request<T>(path, withJsonBody("PUT", body)),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  // Sin Content-Type manual: el navegador pone el boundary del multipart
+  upload: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form }),
 };

@@ -34,16 +34,23 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISpotifyTokenRepository, SpotifyTokenRepository>();
 builder.Services.AddScoped<ITopItemsRepository, TopItemsRepository>();
 builder.Services.AddScoped<IFollowRepository, FollowRepository>();
+builder.Services.AddScoped<IGroupFollowRepository, GroupFollowRepository>();
+builder.Services.AddScoped<IListaRepository, ListaRepository>();
+builder.Services.AddScoped<IGroupPhotoRepository, GroupPhotoRepository>();
+builder.Services.AddScoped<IGroupVideoRepository, GroupVideoRepository>();
 builder.Services.AddScoped<IMusicItemRepository, MusicItemRepository>();
 builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<INoteLikeRepository, NoteLikeRepository>();
 builder.Services.AddScoped<INoteCommentRepository, NoteCommentRepository>();
 builder.Services.AddScoped<IDiscoveryRepository, DiscoveryRepository>();
 builder.Services.AddScoped<DiscoveryService>();
+builder.Services.AddScoped<MusicItemResolverService>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IConversationReadRepository, ConversationReadRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<SpotifyTokenService>();
 builder.Services.AddScoped<FeedService>();
+builder.Services.AddScoped<EcosService>();
 builder.Services.AddSingleton<FeedRanker>();
 builder.Services.AddSingleton<MusicAffinityCalculator>();
 builder.Services.AddScoped<AffinityService>();
@@ -100,6 +107,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Las fotos de los grupos locales se guardan en disco (wwwroot/uploads) y
+// se sirven como estáticos: es un proyecto de portfolio, no hace falta un
+// proveedor de almacenamiento externo
+app.UseStaticFiles();
 
 app.UseCors();
 

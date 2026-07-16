@@ -12,6 +12,7 @@ import NoteCard from "../components/NoteCard";
 import NoteInteractionsBar, { loadInteractions } from "../components/NoteInteractionsBar";
 import PlatformPlayer from "../components/PlatformPlayer";
 import { resolveVibe } from "../vibes";
+import { relativeTime } from "../time";
 
 interface NoteDetailResponse {
   author: NoteAuthor;
@@ -51,6 +52,8 @@ export default function NoteDetail() {
   const [others, setOthers] = useState<MusicItemDetail["notes"]>([]);
   const [commonArtists, setCommonArtists] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
+  // Si sigo a quien la escribió, para el botón del hero
+  const [followingAuthor, setFollowingAuthor] = useState<boolean | null>(null);
   const [error, setError] = useState("");
 
   const myId = getMyUserId();
@@ -80,6 +83,10 @@ export default function NoteDetail() {
           api
             .get<Affinity>(`/api/users/${d.author.id}/affinity`)
             .then((a) => setCommonArtists(a.commonArtists))
+            .catch(() => {});
+          api
+            .get<{ isFollowedByMe: boolean }>(`/api/users/${d.author.id}`)
+            .then((u) => setFollowingAuthor(u.isFollowedByMe))
             .catch(() => {});
         }
         api
@@ -123,14 +130,24 @@ export default function NoteDetail() {
     }
   };
 
+  const toggleFollowAuthor = async () => {
+    if (followingAuthor === null) return;
+    if (followingAuthor) {
+      await api.delete(`/api/users/${author.id}/follow`).catch(() => {});
+    } else {
+      await api.post(`/api/users/${author.id}/follow`).catch(() => {});
+    }
+    setFollowingAuthor(!followingAuthor);
+  };
+
   return (
     <>
       <header
         className="note-hero"
-        // El hero se tiñe con el vibe de la nota; sin vibe, salvia tenue
+        // El hero se tiñe con el vibe de la nota; sin vibe, rojo tenue
         style={{
-          background: `linear-gradient(160deg, ${vibe?.hex ?? "#a8c8a0"}29, ${
-            vibe?.hex ?? "#a8c8a0"
+          background: `linear-gradient(160deg, ${vibe?.hex ?? "#e11900"}29, ${
+            vibe?.hex ?? "#e11900"
           }0d 70%)`,
         }}
       >
@@ -148,9 +165,24 @@ export default function NoteDetail() {
               {author.displayName}
             </Link>
             <span className="note-track-date">
-              {new Date(note.createdAt).toLocaleDateString()} · {ABOUT_LABEL[item.type]}
+              {relativeTime(note.createdAt)} · {ABOUT_LABEL[item.type]}
             </span>
           </div>
+          {!isMine && (
+            <div className="note-hero-actions">
+              {followingAuthor !== null && (
+                <button
+                  className={`btn btn-ghost btn-sm btn-follow${followingAuthor ? " is-following" : ""}`}
+                  onClick={toggleFollowAuthor}
+                >
+                  {followingAuthor ? "Siguiendo" : "Seguir"}
+                </button>
+              )}
+              <Link className="btn btn-quiet btn-sm" to={`/chats/${author.id}`}>
+                Mensaje
+              </Link>
+            </div>
+          )}
         </div>
         {note.text && <p className="note-text note-text-xl">{note.text}</p>}
         <div className="note-hero-tags">

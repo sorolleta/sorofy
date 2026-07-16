@@ -26,6 +26,8 @@ export interface MyProfile {
   topTracks: TopTrack[];
   lastSync: string | null;
   province: string | null;
+  // "en Sorofy desde marzo"
+  createdAt: string;
   tags: string[];
 }
 
@@ -33,6 +35,7 @@ export interface UserSummary {
   id: string;
   displayName: string;
   avatarUrl: string | null;
+  province: string | null;
   isFollowedByMe: boolean;
 }
 
@@ -40,8 +43,9 @@ export interface UserProfile {
   id: string;
   displayName: string;
   avatarUrl: string | null;
-  followers: number;
-  following: number;
+  province: string | null;
+  followersCount: number;
+  followingCount: number;
   isFollowedByMe: boolean;
   trustCount: number;
   topArtists: TopArtist[];
@@ -73,13 +77,49 @@ export interface FeedEntry {
   author: NoteAuthor;
   note: Note;
   becauseArtist: string | null;
+  becauseFollowedGroup: string | null;
   becauseProvince: string | null;
+}
+
+// Contexto vivo de Spotify para la ficha; null si el item no es de
+// Spotify o la llamada falló (la ficha se muestra igual sin él)
+export interface AlbumTrackRow {
+  number: number;
+  name: string;
+  durationMs: number;
+  spotifyId: string;
+  // La última nota con texto sobre esa canción, como frase en cursiva
+  noteHint: { noteId: string; text: string; authorName: string } | null;
+}
+
+export interface AlbumExtra {
+  releaseYear: string | null;
+  totalTracks: number | null;
+  totalDurationMin: number;
+  tracks: AlbumTrackRow[];
+}
+
+export interface TrackExtra {
+  durationMs: number | null;
+  album: {
+    spotifyId: string;
+    name: string;
+    imageUrl: string | null;
+    releaseYear: string | null;
+  } | null;
+}
+
+export interface ArtistExtra {
+  albums: { spotifyId: string; name: string; imageUrl: string | null }[];
 }
 
 // La ficha de un item: sus datos y todas las notas de la comunidad
 export interface MusicItemDetail {
   item: MusicItem;
   notes: { author: NoteAuthor; note: Note }[];
+  // Se discrimina por item.type: album/track/artist
+  extra: AlbumExtra | TrackExtra | ArtistExtra | null;
+  circle: CircleEntry[];
 }
 
 export interface Affinity {
@@ -116,6 +156,26 @@ export interface ChatMessage {
   sentAt: string;
 }
 
+// Un eco: el rastro de lo que una nota tuya ha movido. Sin cifras — cada
+// fila es un hecho concreto, no un contador.
+export interface EcoItem {
+  id: string;
+  kind: "liked" | "commented" | "discovered" | "followed" | "listaSaved" | "listaAdded";
+  createdAt: string;
+  hasUnread: boolean;
+  actor: { id: string; name: string; avatarUrl: string | null };
+  noteId: string | null;
+  musicItemId: string | null;
+  musicItemName: string | null;
+  musicItemImageUrl: string | null;
+  quote: string | null;
+  // Solo ecos de estanterías: cuál
+  listaId: string | null;
+  listaTitle: string | null;
+  // Solo follows: "Tenéis a X en común"
+  commonArtist: string | null;
+}
+
 export interface Conversation {
   userId: string;
   displayName: string;
@@ -125,6 +185,7 @@ export interface Conversation {
     sentAt: string;
     fromMe: boolean;
   };
+  hasUnread: boolean;
 }
 
 // Cualquier cosa musical sobre la que se escribe: canción, álbum, artista
@@ -143,6 +204,31 @@ export interface MusicItem {
   // Solo grupos locales: qué son y de dónde son
   category: string | null;
   province: string | null;
+  // Solo grupos locales: quién dio de alta la ficha (null en items de Spotify)
+  createdByUserId: string | null;
+  // Solo grupos locales: si ya sigues sus notas (false en items de Spotify)
+  isFollowedByMe: boolean;
+  // Solo grupos locales: lo que no falla en ningún pueblo (vacío si no hay)
+  repertoire: string[];
+  // Solo grupos locales: fotos reales subidas por la comunidad
+  photos: GroupPhoto[];
+}
+
+export interface GroupPhoto {
+  id: string;
+  url: string;
+  uploadedByUserId: string;
+  canRemove: boolean;
+}
+
+// "En tu círculo": alguien que sigues ya lo tiene guardado, o ha escrito
+// sobre esto. Sin cifras de nadie más.
+export interface CircleEntry {
+  kind: "saved" | "noted";
+  userId: string;
+  displayName: string;
+  savedAt: string | null;
+  noteCount: number | null;
 }
 
 // Un item en la estantería del feed: solo lo justo para pintar la carátula
@@ -211,6 +297,7 @@ export interface LocalGroup {
   soundcloudUrl: string | null;
   category: string | null;
   province: string | null;
+  repertoire: string[];
   createdAt: string;
 }
 
@@ -218,4 +305,41 @@ export interface LocalGroup {
 export interface LocalGroupOptions {
   categories: string[];
   provinces: string[];
+}
+
+// Estanterías: colecciones hechas a mano, sin algoritmo ni autoplay
+export interface ListaCard {
+  id: string;
+  title: string;
+  mood: string | null;
+  curator: { id: string; displayName: string };
+  itemCount: number;
+  coverImages: string[];
+}
+
+export interface ListaItemMusicItem {
+  id: string;
+  type: "album" | "track" | "artist" | "localGroup";
+  spotifyId: string | null;
+  name: string;
+  artistName: string | null;
+  imageUrl: string | null;
+}
+
+export interface ListaItemEntry {
+  id: string;
+  musicItem: ListaItemMusicItem;
+  text: string;
+  addedBy: { id: string; displayName: string };
+  canRemove: boolean;
+}
+
+export interface ListaDetail {
+  id: string;
+  title: string;
+  mood: string | null;
+  curator: { id: string; displayName: string };
+  isMine: boolean;
+  isSavedByMe: boolean;
+  items: ListaItemEntry[];
 }

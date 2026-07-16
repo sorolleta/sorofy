@@ -58,6 +58,7 @@ export default function People() {
             )}
             <Link to={`/gente/${user.id}`} className="person-name">
               {user.displayName}
+              {user.province && <small>De {user.province}</small>}
             </Link>
             <button
               className={`btn btn-ghost btn-sm btn-follow${user.isFollowedByMe ? " is-following" : ""}`}

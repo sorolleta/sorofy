@@ -20,6 +20,14 @@ public class MusicItemRepository(AppDbContext db) : IMusicItemRepository
             .Take(20)
             .ToListAsync();
 
+    // Para el "Cerca de ti" del onboarding: los grupos de una provincia
+    public Task<List<MusicItem>> GetLocalGroupsByProvinceAsync(string province, int limit) =>
+        db.MusicItems
+            .Where(i => i.Type == MusicItemType.LocalGroup && i.Province == province)
+            .OrderBy(i => i.Name)
+            .Take(limit)
+            .ToListAsync();
+
     public Task AddAsync(MusicItem item) => db.MusicItems.AddAsync(item).AsTask();
 
     public Task SaveChangesAsync() => db.SaveChangesAsync();

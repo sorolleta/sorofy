@@ -7,6 +7,7 @@ public interface IMusicItemRepository
     Task<MusicItem?> GetByIdAsync(Guid id);
     Task<MusicItem?> GetBySpotifyIdAsync(MusicItemType type, string spotifyId);
     Task<List<MusicItem>> SearchLocalGroupsAsync(string query);
+    Task<List<MusicItem>> GetLocalGroupsByProvinceAsync(string province, int limit);
     Task AddAsync(MusicItem item);
     Task SaveChangesAsync();
 }

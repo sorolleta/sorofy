@@ -41,6 +41,24 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("CommentLikes");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.ConversationRead", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OtherUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "OtherUserId");
+
+                    b.HasIndex("OtherUserId");
+
+                    b.ToTable("ConversationReads");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Discovery", b =>
                 {
                     b.Property<Guid>("Id")
@@ -94,6 +112,129 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("Follows");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.GroupFollow", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MusicItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "MusicItemId");
+
+                    b.HasIndex("MusicItemId");
+
+                    b.ToTable("GroupFollows");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.GroupPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MusicItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MusicItemId");
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.ToTable("GroupPhotos");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Lista", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CuratorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Mood")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CuratorId");
+
+                    b.ToTable("Listas");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.ListaItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AddedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ListaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MusicItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddedByUserId");
+
+                    b.HasIndex("ListaId");
+
+                    b.HasIndex("MusicItemId");
+
+                    b.ToTable("ListaItems");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.ListaSave", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ListaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "ListaId");
+
+                    b.HasIndex("ListaId");
+
+                    b.ToTable("ListaSaves");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Message", b =>
                 {
                     b.Property<long>("Id")
@@ -141,6 +282,9 @@ namespace SameSpot.Api.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -155,6 +299,9 @@ namespace SameSpot.Api.Data.Migrations
                     b.Property<string>("Province")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Repertoire")
+                        .HasColumnType("text");
 
                     b.Property<string>("SoundcloudUrl")
                         .HasMaxLength(300)
@@ -171,6 +318,8 @@ namespace SameSpot.Api.Data.Migrations
                         .HasColumnType("character varying(300)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("Province")
                         .HasFilter("\"Province\" IS NOT NULL");
@@ -523,6 +672,9 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("LastEcosReadAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("OnboardingCompletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -572,6 +724,25 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.ConversationRead", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "OtherUser")
+                        .WithMany()
+                        .HasForeignKey("OtherUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OtherUser");
 
                     b.Navigation("User");
                 });
@@ -629,6 +800,101 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("Following");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.GroupFollow", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.MusicItem", "MusicItem")
+                        .WithMany()
+                        .HasForeignKey("MusicItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MusicItem");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.GroupPhoto", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.MusicItem", "MusicItem")
+                        .WithMany()
+                        .HasForeignKey("MusicItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MusicItem");
+
+                    b.Navigation("UploadedByUser");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Lista", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "Curator")
+                        .WithMany()
+                        .HasForeignKey("CuratorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curator");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.ListaItem", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "AddedByUser")
+                        .WithMany()
+                        .HasForeignKey("AddedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.Lista", "Lista")
+                        .WithMany("Items")
+                        .HasForeignKey("ListaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.MusicItem", "MusicItem")
+                        .WithMany()
+                        .HasForeignKey("MusicItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AddedByUser");
+
+                    b.Navigation("Lista");
+
+                    b.Navigation("MusicItem");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.ListaSave", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.Lista", "Lista")
+                        .WithMany()
+                        .HasForeignKey("ListaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lista");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Message", b =>
                 {
                     b.HasOne("SameSpot.Api.Models.User", "Recipient")
@@ -646,6 +912,16 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("Recipient");
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.MusicItem", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.Note", b =>
@@ -758,6 +1034,11 @@ namespace SameSpot.Api.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Lista", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.User", b =>

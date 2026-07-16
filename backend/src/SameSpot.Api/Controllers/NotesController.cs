@@ -14,8 +14,14 @@ public class NotesController(
     INoteRepository notes,
     IMusicItemRepository items,
     SpotifyApiService spotify,
+    MusicItemResolverService resolver,
     MediaLinkService media) : ControllerBase
 {
+    // Una nota con texto tiene que contar algo: el mínimo evita el "ok" suelto
+    private const int MinTextLength = 20;
+    private const string MinTextMessage =
+        "Cuéntanos un poco más: una nota necesita al menos 20 caracteres.";
+
     // El item se indica de una de estas dos formas:
     // - itemType (track/album/artist) + spotifyItemId, para cosas de Spotify
     // - musicItemId, para grupos locales ya creados en /api/local-groups
@@ -36,6 +42,10 @@ public class NotesController(
         if (text is null && vibeLabel is null)
         {
             return BadRequest(new { message = "Una nota necesita al menos texto o un vibe." });
+        }
+        if (text is not null && text.Length < MinTextLength)
+        {
+            return BadRequest(new { message = MinTextMessage });
         }
 
         var myId = User.GetUserId();
@@ -87,6 +97,11 @@ public class NotesController(
         return Ok(mine.Select(ToResponse));
     }
 
+    // Sugerencias para el picker de vibe: etiquetas que ya usó la
+    // comunidad, en vez de un campo 100% libre
+    [HttpGet("vibe-labels")]
+    public async Task<IActionResult> GetVibeLabels() => Ok(await notes.GetRecentVibeLabelsAsync(20));
+
     // La página de detalle de una nota: la nota y quién la escribió
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetDetail(Guid id)
@@ -109,6 +124,10 @@ public class NotesController(
         if (text is null && vibeLabel is null)
         {
             return BadRequest(new { message = "Una nota necesita al menos texto o un vibe." });
+        }
+        if (text is not null && text.Length < MinTextLength)
+        {
+            return BadRequest(new { message = MinTextMessage });
         }
 
         var note = await notes.GetByIdAsync(id);
@@ -145,12 +164,11 @@ public class NotesController(
     }
 
     // Busca el MusicItem en nuestra BD y, si es la primera nota sobre él,
-    // lo crea validándolo contra Spotify (que además nos da los metadatos
-    // canónicos: no nos fiamos de los del cliente).
+    // lo crea validándolo contra Spotify (lógica compartida en el resolver)
     private async Task<(MusicItem? Item, IActionResult? Error)> FindOrCreateSpotifyItemAsync(
         Guid myId, string? rawType, string? rawSpotifyId)
     {
-        var itemType = ParseSpotifyItemType(rawType);
+        var itemType = MusicItemResolverService.ParseSpotifyItemType(rawType);
         if (itemType is null)
         {
             return (null, BadRequest(new
@@ -163,46 +181,9 @@ public class NotesController(
             return (null, BadRequest(new { message = "Falta spotifyItemId." }));
         }
 
-        var spotifyId = rawSpotifyId.Trim();
-        var existing = await items.GetBySpotifyIdAsync(itemType.Value, spotifyId);
-        if (existing is not null) return (existing, null);
-
-        string name;
-        string? artistName, imageUrl;
-        switch (itemType.Value)
-        {
-            case MusicItemType.Track:
-                var track = await spotify.GetTrackAsync(myId, spotifyId);
-                if (track is null) return (null, NotFound(new { message = "Esa canción no existe en Spotify." }));
-                (name, artistName, imageUrl) =
-                    (track.Name, JoinArtists(track.Artists), track.Album?.Images?.FirstOrDefault()?.Url);
-                break;
-            case MusicItemType.Album:
-                var album = await spotify.GetAlbumAsync(myId, spotifyId);
-                if (album is null) return (null, NotFound(new { message = "Ese álbum no existe en Spotify." }));
-                (name, artistName, imageUrl) =
-                    (album.Name, JoinArtists(album.Artists), album.Images?.FirstOrDefault()?.Url);
-                break;
-            default:
-                var artist = await spotify.GetArtistAsync(myId, spotifyId);
-                if (artist is null) return (null, NotFound(new { message = "Ese artista no existe en Spotify." }));
-                (name, artistName, imageUrl) =
-                    (artist.Name, null, artist.Images?.FirstOrDefault()?.Url);
-                break;
-        }
-
-        var item = new MusicItem
-        {
-            Id = Guid.NewGuid(),
-            Type = itemType.Value,
-            SpotifyId = spotifyId,
-            Name = name,
-            ArtistName = artistName,
-            ImageUrl = imageUrl,
-            CreatedAt = DateTime.UtcNow,
-        };
-        await items.AddAsync(item);
-        return (item, null);
+        var result = await resolver.FindOrCreateAsync(myId, itemType.Value, rawSpotifyId);
+        if (result.Error is not null) return (null, NotFound(new { message = result.Error }));
+        return (result.Item, null);
     }
 
     // El "escúchalo aquí" solo puede ser de YouTube o SoundCloud, y el
@@ -249,19 +230,8 @@ public class NotesController(
         return (anchorId, artist.Name, null);
     }
 
-    private static MusicItemType? ParseSpotifyItemType(string? raw) => raw?.ToLowerInvariant() switch
-    {
-        "track" => MusicItemType.Track,
-        "album" => MusicItemType.Album,
-        "artist" => MusicItemType.Artist,
-        _ => null,
-    };
-
     private static string? NormalizeText(string? text) =>
         string.IsNullOrWhiteSpace(text) ? null : text.Trim();
-
-    private static string JoinArtists(List<SpotifyArtistBriefDto> artists) =>
-        string.Join(", ", artists.Select(a => a.Name));
 
     internal static string TypeToString(MusicItemType type) => type switch
     {

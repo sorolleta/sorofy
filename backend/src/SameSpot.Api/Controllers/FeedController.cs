@@ -21,6 +21,7 @@ public class FeedController(FeedService feedService) : ControllerBase
             Author = new { f.Note.User.Id, f.Note.User.DisplayName, f.Note.User.AvatarUrl },
             Note = NotesController.ToResponse(f.Note),
             f.BecauseArtist,
+            f.BecauseFollowedGroup,
             f.BecauseProvince,
         }));
     }

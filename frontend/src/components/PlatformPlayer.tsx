@@ -8,7 +8,7 @@ export function youtubeEmbedUrl(url: string): string | null {
 
 export function soundcloudEmbedUrl(url: string): string {
   // El color del player es el acento salvia de la app
-  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23a8c8a0`;
+  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23e11900`;
 }
 
 // El embed oficial de Spotify: 30 segundos para cualquiera, la canción

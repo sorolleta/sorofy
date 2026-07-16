@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import { api } from "../api";
 import type { LocalGroup, LocalGroupOptions, Note, SearchArtist, SearchResponse } from "../types";
 import NoteList from "../components/NoteList";
-import { VIBES, resolveVibe } from "../vibes";
 
 // Lo que hace falta para abrir el formulario: un item de Spotify, un grupo
 // local o una nota existente (edición)
@@ -16,8 +15,17 @@ interface Draft {
   artistName?: string | null;
 }
 
-// El "vibe" se elige de un clic: color + emoji + etiqueta corta
-const VIBE_EMOJIS = ["🎺", "🌊", "🌙", "🔥", "🚗", "🍷", "🌧️", "💃"];
+type Tab = "buscar" | "crear" | "bitacora";
+
+// Una nota con texto tiene que contar algo (el backend valida lo mismo)
+const MIN_TEXT = 20;
+
+// "Escúchalo aquí" solo acepta YouTube o SoundCloud; avisar al escribir
+// evita descubrirlo con el error del servidor al publicar
+const isListenUrlValid = (url: string) =>
+  /(^|\.)((youtube\.com)|(youtu\.be)|(soundcloud\.com))\//.test(
+    url.replace(/^https?:\/\/(www\.|m\.|on\.)?/, ""),
+  );
 
 // Fila del buscador: carátula, nombre y el botón que abre el formulario
 function ResultRow({
@@ -55,6 +63,7 @@ function ResultRow({
 }
 
 export default function Notes() {
+  const [tab, setTab] = useState<Tab>("buscar");
   const [myNotes, setMyNotes] = useState<Note[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResponse | null>(null);
@@ -62,6 +71,8 @@ export default function Notes() {
   const [searching, setSearching] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [text, setText] = useState("");
+  // El vibe es una etiqueta de texto libre; color y emoji sobreviven solo
+  // en las notas viejas (se conservan al editar, ya no se eligen)
   const [vibeColor, setVibeColor] = useState<string | null>(null);
   const [vibeEmoji, setVibeEmoji] = useState<string | null>(null);
   const [vibeLabel, setVibeLabel] = useState("");
@@ -72,13 +83,17 @@ export default function Notes() {
   const [anchorQuery, setAnchorQuery] = useState("");
   const [anchorOptions, setAnchorOptions] = useState<SearchArtist[]>([]);
   const [anchorSearching, setAnchorSearching] = useState(false);
-  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
-  const [newGroupYoutube, setNewGroupYoutube] = useState("");
+  // El primer vídeo es el principal del perfil; el resto, material extra
+  const [newGroupYoutubes, setNewGroupYoutubes] = useState<string[]>([""]);
   const [newGroupSoundcloud, setNewGroupSoundcloud] = useState("");
+  const [newGroupRepertoire, setNewGroupRepertoire] = useState("");
   const [newGroupCategory, setNewGroupCategory] = useState("");
   const [newGroupProvince, setNewGroupProvince] = useState("");
   const [groupOptions, setGroupOptions] = useState<LocalGroupOptions | null>(null);
+  // Sugerencias para la etiqueta del vibe: las que ya usó la comunidad
+  const [vibeLabels, setVibeLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -91,6 +106,22 @@ export default function Notes() {
 
   useEffect(() => {
     api.get<LocalGroupOptions>("/api/local-groups/options").then(setGroupOptions).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    api.get<string[]>("/api/notes/vibe-labels").then(setVibeLabels).catch(() => {});
+  }, []);
+
+  // Texto escrito en el composer rápido del feed, a la espera de que aquí
+  // se elija el item: una nota siempre necesita uno, así que no se publica
+  // sola (a diferencia del prototipo, que la creaba sin vincular nada)
+  const [pendingComposerText, setPendingComposerText] = useState("");
+  useEffect(() => {
+    const draft = localStorage.getItem("sorofy-composer-draft");
+    if (draft) {
+      setPendingComposerText(draft);
+      localStorage.removeItem("sorofy-composer-draft");
+    }
   }, []);
 
   // La ficha de un item ("Escribir una nota") llega con el item ya elegido
@@ -128,8 +159,10 @@ export default function Notes() {
   };
 
   const openDraft = (draft: Draft) => {
+    setTab("buscar");
     setDraft(draft);
-    setText("");
+    setText(pendingComposerText);
+    setPendingComposerText("");
     setVibeColor(null);
     setVibeEmoji(null);
     setVibeLabel("");
@@ -148,8 +181,9 @@ export default function Notes() {
       artistName: note.item.artistName,
     });
     setText(note.text ?? "");
-    // Los vibes viejos se normalizan a la paleta nueva al editar
-    setVibeColor(note.vibeColor ? resolveVibe(note.vibeColor).hex : null);
+    // El color y emoji viejos viajan de vuelta tal cual: no hay UI para
+    // cambiarlos, pero editar el texto no debe borrárselos a la tarjeta
+    setVibeColor(note.vibeColor);
     setVibeEmoji(note.vibeEmoji);
     setVibeLabel(note.vibeLabel ?? "");
     setListenUrl(note.listenUrl ?? "");
@@ -175,21 +209,26 @@ export default function Notes() {
   const createLocalGroup = async () => {
     setSaving(true);
     setError("");
+    const [mainYoutube, ...extraYoutubes] = newGroupYoutubes.map((u) => u.trim());
     try {
       const group = await api.post<LocalGroup>("/api/local-groups", {
-        name: query.trim(),
+        name: newGroupName.trim(),
         description: newGroupDescription,
-        youtubeUrl: newGroupYoutube,
+        youtubeUrl: mainYoutube,
+        extraYoutubeUrls: extraYoutubes.filter((u) => u !== ""),
         soundcloudUrl: newGroupSoundcloud,
         category: newGroupCategory,
         province: newGroupProvince,
+        repertoire: newGroupRepertoire,
       });
-      setShowNewGroup(false);
+      setNewGroupName("");
       setNewGroupDescription("");
-      setNewGroupYoutube("");
+      setNewGroupYoutubes([""]);
       setNewGroupSoundcloud("");
       setNewGroupCategory("");
       setNewGroupProvince("");
+      setNewGroupRepertoire("");
+      // El perfil ya existe: directos al formulario de la primera nota
       openDraft({ musicItemId: group.id, name: group.name });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear el grupo");
@@ -241,342 +280,432 @@ export default function Notes() {
     loadMine();
   };
 
-  const canSave = text.trim() !== "" || vibeLabel.trim() !== "";
-  const previewVibe = vibeColor ? resolveVibe(vibeColor) : null;
+  const textTooShort = text.trim() !== "" && text.trim().length < MIN_TEXT;
+  const listenUrlInvalid = listenUrl.trim() !== "" && !isListenUrlValid(listenUrl.trim());
+  const canSave =
+    (text.trim().length >= MIN_TEXT || (text.trim() === "" && vibeLabel.trim() !== "")) &&
+    !listenUrlInvalid;
+
+  const tabButton = (id: Tab, label: string) => (
+    <button
+      className={`tab-btn${tab === id ? " is-active" : ""}`}
+      role="tab"
+      aria-selected={tab === id}
+      onClick={() => setTab(id)}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <>
       <div className="page-head">
-        <h1 className="section-title">Deja una nota</h1>
+        <h1 className="section-title">Notas</h1>
         <p className="section-sub">
-          Busca lo que te ha tocado hoy — una canción, un disco, la charanga
-          de tu pueblo — y cuéntalo con tus palabras.
+          Busca lo que te ha tocado hoy, crea un perfil que falte, o repasa lo
+          que ya has escrito.
         </p>
+        {pendingComposerText && !draft && (
+          <p className="section-sub accent">Tu nota del feed está lista — busca de qué habla.</p>
+        )}
       </div>
 
-      {draft && (
-        <section className="panel">
-          <div className="form-head">
-            <h2 className="section-title form-title">
-              {draft.noteId ? "Editar tu nota sobre" : "Tu nota sobre"} <em>{draft.name}</em>
-            </h2>
-            {draft.artistName && <span className="note-track-date">{draft.artistName}</span>}
-          </div>
+      <div className="tab-bar" role="tablist">
+        {tabButton("buscar", "Buscar y anotar")}
+        {tabButton("crear", "Crear perfil")}
+        {tabButton("bitacora", "Mi bitácora")}
+      </div>
 
-          <div className="field">
-            <textarea
-              placeholder="¿Dónde estabas la primera vez que la escuchaste? ¿A quién se la pondrías?"
-              maxLength={2000}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          </div>
+      {tab === "buscar" && (
+        <div className="tab-panel is-active">
+          {draft && (
+            <section className="panel">
+              <div className="form-head">
+                <h2 className="section-title form-title">
+                  {draft.noteId ? "Editar tu nota sobre" : "Tu nota sobre"} <em>{draft.name}</em>
+                </h2>
+                {draft.artistName && <span className="note-track-date">{draft.artistName}</span>}
+              </div>
 
-          <div className="field">
-            <label>Vibe (opcional): un color, un emoji y tu etiqueta</label>
-            <div className="vibe-dots">
-              {VIBES.map((vibe) => (
-                <button
-                  key={vibe.hex}
-                  type="button"
-                  className={`vibe-dot${vibeColor === vibe.hex ? " is-selected" : ""}`}
-                  style={{ background: vibe.hex }}
-                  aria-label={`Color ${vibe.hex}`}
-                  onClick={() => setVibeColor(vibeColor === vibe.hex ? null : vibe.hex)}
+              <div className={`field${textTooShort ? " has-error" : ""}`}>
+                <textarea
+                  placeholder="¿Dónde estabas la primera vez que la escuchaste? ¿A quién se la pondrías?"
+                  maxLength={2000}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
                 />
-              ))}
-            </div>
-            <div className="emoji-row">
-              {VIBE_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={`emoji-pick${vibeEmoji === emoji ? " is-selected" : ""}`}
-                  onClick={() => setVibeEmoji(vibeEmoji === emoji ? null : emoji)}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-            <input
-              type="text"
-              placeholder="Tu etiqueta, ej. Mar de invierno"
-              maxLength={40}
-              value={vibeLabel}
-              onChange={(e) => setVibeLabel(e.target.value)}
-            />
-            {/* Preview en vivo: el chip tal y como se verá en la tarjeta */}
-            {previewVibe && (vibeEmoji || vibeLabel) && (
-              <span
-                className="vibe-chip"
-                style={{ background: previewVibe.hex, color: previewVibe.ink }}
-              >
-                {vibeEmoji && <span>{vibeEmoji}</span>}
-                {vibeLabel || "Tu etiqueta"}
-              </span>
-            )}
-          </div>
-
-          {/* El audio exacto del que habla la nota: la versión en directo,
-              el set, el tema que no está en Spotify... */}
-          <div className="field">
-            <label>Escúchalo aquí (opcional): la versión exacta de la que hablas</label>
-            <input
-              type="url"
-              placeholder="Enlace de YouTube o SoundCloud"
-              maxLength={300}
-              value={listenUrl}
-              onChange={(e) => setListenUrl(e.target.value)}
-            />
-          </div>
-
-          {/* El ancla convierte la nota en recomendación dirigida: le
-              llegará a quien ya escucha ese artista aunque no te siga */}
-          <div className="field">
-            <label>¿Recomendación? Ánclala: «si te gusta…»</label>
-            {anchor ? (
-              <span className="anchor-chip">
-                Si te gusta <strong className="anchor-name">{anchor.name}</strong>
-                <button className="anchor-remove" onClick={() => setAnchor(null)}>
-                  Quitar
-                </button>
-              </span>
-            ) : (
-              <>
-                <div className="form-row">
-                  <input
-                    type="search"
-                    placeholder="Busca un artista para anclar"
-                    value={anchorQuery}
-                    onChange={(e) => setAnchorQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        searchAnchor();
-                      }
-                    }}
-                  />
-                  <button
-                    className="btn btn-quiet btn-sm"
-                    type="button"
-                    onClick={searchAnchor}
-                    disabled={anchorSearching}
-                  >
-                    {anchorSearching ? "Buscando…" : "Buscar"}
-                  </button>
-                </div>
-                {anchorOptions.length > 0 && (
-                  <div className="chip-row">
-                    {anchorOptions.map((artist) => (
-                      <button
-                        key={artist.id}
-                        type="button"
-                        className="btn btn-quiet btn-sm"
-                        onClick={() => {
-                          setAnchor({ id: artist.id, name: artist.name });
-                          setAnchorOptions([]);
-                          setAnchorQuery("");
-                        }}
-                      >
-                        {artist.name}
-                      </button>
-                    ))}
-                  </div>
+                {textTooShort && (
+                  <span className="field-error">
+                    Cuéntanos un poco más: una nota necesita al menos {MIN_TEXT} caracteres.
+                  </span>
                 )}
+              </div>
+
+              <div className="field">
+                <label>Ponle una etiqueta (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Tu etiqueta, ej. Mar de invierno"
+                  maxLength={40}
+                  value={vibeLabel}
+                  onChange={(e) => setVibeLabel(e.target.value)}
+                  list="vibe-label-suggestions"
+                />
+                {vibeLabels.length > 0 && (
+                  <datalist id="vibe-label-suggestions">
+                    {vibeLabels.map((label) => (
+                      <option key={label} value={label} />
+                    ))}
+                  </datalist>
+                )}
+                {/* Preview en vivo: el chip tal y como se verá en la tarjeta */}
+                {vibeLabel && (
+                  <span className="vibe-chip vibe-chip-plain">
+                    {vibeEmoji && <span>{vibeEmoji}</span>}
+                    {vibeLabel}
+                  </span>
+                )}
+              </div>
+
+              {/* El ancla convierte la nota en recomendación dirigida: le
+                  llegará a quien ya escucha ese artista aunque no te siga */}
+              <div className="field">
+                <label>¿Recomendación? Ánclala: «si te gusta…»</label>
+                {anchor ? (
+                  <span className="anchor-chip">
+                    Si te gusta <strong className="anchor-name">{anchor.name}</strong>
+                    <button className="anchor-remove" onClick={() => setAnchor(null)}>
+                      Quitar
+                    </button>
+                  </span>
+                ) : (
+                  <>
+                    <div className="form-row">
+                      <input
+                        type="search"
+                        placeholder="Busca un artista para anclar"
+                        value={anchorQuery}
+                        onChange={(e) => setAnchorQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            searchAnchor();
+                          }
+                        }}
+                      />
+                      <button
+                        className="btn btn-quiet btn-sm"
+                        type="button"
+                        onClick={searchAnchor}
+                        disabled={anchorSearching}
+                      >
+                        {anchorSearching ? "Buscando…" : "Buscar"}
+                      </button>
+                    </div>
+                    {anchorOptions.length > 0 && (
+                      <div className="chip-row">
+                        {anchorOptions.map((artist) => (
+                          <button
+                            key={artist.id}
+                            type="button"
+                            className="btn btn-quiet btn-sm"
+                            onClick={() => {
+                              setAnchor({ id: artist.id, name: artist.name });
+                              setAnchorOptions([]);
+                              setAnchorQuery("");
+                            }}
+                          >
+                            {artist.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* El audio exacto del que habla la nota: la versión en directo,
+                  el set, el tema que no está en Spotify... */}
+              <div className={`field${listenUrlInvalid ? " has-error" : ""}`}>
+                <label>Escúchalo aquí (opcional): el directo o set exacto del que hablas</label>
+                <input
+                  type="url"
+                  placeholder="Enlace de YouTube o SoundCloud"
+                  maxLength={300}
+                  value={listenUrl}
+                  onChange={(e) => setListenUrl(e.target.value)}
+                />
+                {listenUrlInvalid && (
+                  <span className="field-error">
+                    Ese enlace no parece de YouTube ni SoundCloud. Revísalo.
+                  </span>
+                )}
+                <span className="section-sub field-hint">
+                  Si lo añades, este enlace manda sobre el player por defecto de la canción.
+                </span>
+              </div>
+
+              <div className="form-foot">
+                {!canSave && !textTooShort && !listenUrlInvalid && (
+                  <span className="section-sub">
+                    Escribe algo o ponle al menos la etiqueta.
+                  </span>
+                )}
+                <button className="btn btn-quiet" onClick={() => setDraft(null)}>
+                  Cancelar
+                </button>
+                <button className="btn btn-primary" onClick={save} disabled={saving || !canSave}>
+                  {saving ? "Guardando…" : draft.noteId ? "Guardar cambios" : "Publicar nota"}
+                </button>
+              </div>
+              {error && <p className="field-error">{error}</p>}
+            </section>
+          )}
+
+          <section className="panel search-panel">
+            <form className="field" onSubmit={search}>
+              <input
+                type="search"
+                placeholder="Canción, álbum, artista o grupo de tu pueblo…"
+                aria-label="Buscar música"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </form>
+            {searching && (
+              <div className="loading-state">
+                <span className="spinner" />
+                Buscando…
+              </div>
+            )}
+            {!draft && error && <p className="field-error">{error}</p>}
+
+            {results && (
+              <>
+                <div className="search-cat">Canciones</div>
+                {results.tracks.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {results.tracks.map((track) => (
+                  <ResultRow
+                    key={track.id}
+                    imageUrl={track.imageUrl}
+                    name={track.name}
+                    sub={track.artistName}
+                    onPick={() =>
+                      openDraft({
+                        itemType: "track",
+                        spotifyItemId: track.id,
+                        name: track.name,
+                        artistName: track.artistName,
+                      })
+                    }
+                  />
+                ))}
+
+                <div className="search-cat">Álbumes</div>
+                {results.albums.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {results.albums.map((album) => (
+                  <ResultRow
+                    key={album.id}
+                    imageUrl={album.imageUrl}
+                    name={album.name}
+                    sub={album.artistName}
+                    onPick={() =>
+                      openDraft({
+                        itemType: "album",
+                        spotifyItemId: album.id,
+                        name: album.name,
+                        artistName: album.artistName,
+                      })
+                    }
+                  />
+                ))}
+
+                <div className="search-cat">Artistas</div>
+                {results.artists.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {results.artists.map((artist) => (
+                  <ResultRow
+                    key={artist.id}
+                    imageUrl={artist.imageUrl}
+                    round
+                    name={artist.name}
+                    sub="artista"
+                    onPick={() =>
+                      openDraft({
+                        itemType: "artist",
+                        spotifyItemId: artist.id,
+                        name: artist.name,
+                      })
+                    }
+                  />
+                ))}
+
+                <div className="search-cat">Grupos locales</div>
+                {localGroups.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {localGroups.map((group) => (
+                  <ResultRow
+                    key={group.id}
+                    imageUrl={group.imageUrl ?? null}
+                    fallback="🎪"
+                    name={group.name}
+                    sub={group.description}
+                    onPick={() => openDraft({ musicItemId: group.id, name: group.name })}
+                  />
+                ))}
               </>
             )}
-          </div>
-
-          <div className="form-foot">
-            {!canSave && (
-              <span className="section-sub">
-                Escribe algo o ponle al menos la etiqueta del vibe.
-              </span>
-            )}
-            <button className="btn btn-quiet" onClick={() => setDraft(null)}>
-              Cancelar
-            </button>
-            <button className="btn btn-primary" onClick={save} disabled={saving || !canSave}>
-              {saving ? "Guardando…" : draft.noteId ? "Guardar cambios" : "Publicar nota"}
-            </button>
-          </div>
-          {error && <p className="field-error">{error}</p>}
-        </section>
-      )}
-
-      <section className="panel search-panel">
-        <form className="field" onSubmit={search}>
-          <input
-            type="search"
-            placeholder="Canción, álbum, artista o grupo de tu pueblo…"
-            aria-label="Buscar música"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </form>
-        {searching && (
-          <div className="loading-state">
-            <span className="spinner" />
-            Buscando…
-          </div>
-        )}
-        {!draft && error && <p className="field-error">{error}</p>}
-
-        {results && (
-          <>
-            <div className="search-cat">Canciones</div>
-            {results.tracks.length === 0 && <p className="section-sub">Sin resultados.</p>}
-            {results.tracks.map((track) => (
-              <ResultRow
-                key={track.id}
-                imageUrl={track.imageUrl}
-                name={track.name}
-                sub={track.artistName}
-                onPick={() =>
-                  openDraft({
-                    itemType: "track",
-                    spotifyItemId: track.id,
-                    name: track.name,
-                    artistName: track.artistName,
-                  })
-                }
-              />
-            ))}
-
-            <div className="search-cat">Álbumes</div>
-            {results.albums.length === 0 && <p className="section-sub">Sin resultados.</p>}
-            {results.albums.map((album) => (
-              <ResultRow
-                key={album.id}
-                imageUrl={album.imageUrl}
-                name={album.name}
-                sub={album.artistName}
-                onPick={() =>
-                  openDraft({
-                    itemType: "album",
-                    spotifyItemId: album.id,
-                    name: album.name,
-                    artistName: album.artistName,
-                  })
-                }
-              />
-            ))}
-
-            <div className="search-cat">Artistas</div>
-            {results.artists.length === 0 && <p className="section-sub">Sin resultados.</p>}
-            {results.artists.map((artist) => (
-              <ResultRow
-                key={artist.id}
-                imageUrl={artist.imageUrl}
-                round
-                name={artist.name}
-                sub="artista"
-                onPick={() =>
-                  openDraft({
-                    itemType: "artist",
-                    spotifyItemId: artist.id,
-                    name: artist.name,
-                  })
-                }
-              />
-            ))}
-
-            <div className="search-cat">Grupos locales</div>
-            {localGroups.map((group) => (
-              <ResultRow
-                key={group.id}
-                imageUrl={group.imageUrl ?? null}
-                fallback="🎪"
-                name={group.name}
-                sub={group.description}
-                onPick={() => openDraft({ musicItemId: group.id, name: group.name })}
-              />
-            ))}
 
             {/* Si el grupo no existe en Spotify ni aquí, lo creas tú */}
             <div className="new-group-cta">
-              <span className="section-sub">¿No encuentras al grupo de tu pueblo?</span>
+              <span className="section-sub">
+                ¿No encuentras al grupo de tu pueblo, tu peña o tu proyecto?
+              </span>
               <button
                 className="btn btn-quiet btn-sm"
-                onClick={() => setShowNewGroup(!showNewGroup)}
+                onClick={() => {
+                  if (!newGroupName && query.trim()) setNewGroupName(query.trim());
+                  setTab("crear");
+                }}
               >
-                Crear grupo local
+                Crear perfil
               </button>
             </div>
-            {showNewGroup && (
-              <div className="new-group">
-                <p className="section-sub">Crear "{query.trim()}" como grupo local:</p>
-                {/* Qué son y de dónde son, obligatorios: la provincia
-                    alimenta la proximidad local del feed */}
-                <div className="form-row">
-                  <select
-                    value={newGroupCategory}
-                    onChange={(e) => setNewGroupCategory(e.target.value)}
-                  >
-                    <option value="">Categoría…</option>
-                    {groupOptions?.categories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={newGroupProvince}
-                    onChange={(e) => setNewGroupProvince(e.target.value)}
-                  >
-                    <option value="">Provincia…</option>
-                    {groupOptions?.provinces.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Descripción: la charanga de las fiestas de… (opcional)"
-                  maxLength={500}
-                  value={newGroupDescription}
-                  onChange={(e) => setNewGroupDescription(e.target.value)}
-                />
-                {/* Su música no está en Spotify: que se pueda escuchar igual */}
-                <input
-                  type="url"
-                  placeholder="Vídeo de YouTube: youtube.com/watch?v=… (opcional)"
-                  maxLength={300}
-                  value={newGroupYoutube}
-                  onChange={(e) => setNewGroupYoutube(e.target.value)}
-                />
-                <input
-                  type="url"
-                  placeholder="Audio de SoundCloud: soundcloud.com/… (opcional)"
-                  maxLength={300}
-                  value={newGroupSoundcloud}
-                  onChange={(e) => setNewGroupSoundcloud(e.target.value)}
-                />
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={createLocalGroup}
-                  disabled={saving || !newGroupCategory || !newGroupProvince}
-                >
-                  Crear grupo
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </section>
+          </section>
+        </div>
+      )}
 
-      <div className="page-head">
-        <h2 className="section-title">Mi bitácora</h2>
-        <p className="section-sub">Tus notas, en orden. Solo tú puedes editarlas o borrarlas.</p>
-      </div>
-      <NoteList
-        notes={myNotes}
-        onEdit={openEdit}
-        onDelete={remove}
-        confirmingDelete={confirmingDelete}
-      />
+      {tab === "crear" && (
+        <div className="tab-panel is-active">
+          <section className="panel">
+            <div className="form-head">
+              <h2 className="section-title form-title">Crea el perfil de tu grupo o el tuyo</h2>
+              <p className="section-sub">
+                Para la charanga, la peña, la banda de tu cuadrilla o tu proyecto
+                en solitario que no está en Spotify.
+              </p>
+            </div>
+            <div className="field">
+              <label>Nombre</label>
+              <input
+                type="text"
+                placeholder="Ej. Charanga El Trueno"
+                maxLength={200}
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+              />
+            </div>
+            {/* Qué son y de dónde son, obligatorios: la provincia alimenta
+                la proximidad local del feed */}
+            <div className="form-row form-row-grid">
+              <div className="field">
+                <label>Categoría (obligatoria)</label>
+                <select
+                  value={newGroupCategory}
+                  onChange={(e) => setNewGroupCategory(e.target.value)}
+                >
+                  <option value="">Elige una…</option>
+                  {groupOptions?.categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Provincia (obligatoria)</label>
+                <select
+                  value={newGroupProvince}
+                  onChange={(e) => setNewGroupProvince(e.target.value)}
+                >
+                  <option value="">Elige una…</option>
+                  {groupOptions?.provinces.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="field">
+              <label>Anécdotas del grupo (opcional)</label>
+              <textarea
+                placeholder="Cómo empezasteis, una noche que recordéis siempre, por qué el nombre… lo que haría que alguien os reconociera."
+                maxLength={500}
+                value={newGroupDescription}
+                onChange={(e) => setNewGroupDescription(e.target.value)}
+              />
+            </div>
+            {/* Su música no está en Spotify: que se pueda escuchar igual */}
+            <div className="field">
+              <label>Vídeos de YouTube (opcional)</label>
+              {newGroupYoutubes.map((url, i) => (
+                <input
+                  key={i}
+                  type="url"
+                  placeholder={i === 0 ? "Enlace a un directo o vídeo vuestro" : "Otro enlace de YouTube"}
+                  maxLength={300}
+                  value={url}
+                  onChange={(e) =>
+                    setNewGroupYoutubes((prev) => prev.map((u, j) => (j === i ? e.target.value : u)))
+                  }
+                />
+              ))}
+              <button
+                className="btn btn-quiet btn-sm add-video"
+                type="button"
+                onClick={() => setNewGroupYoutubes((prev) => [...prev, ""])}
+              >
+                + Añadir otro vídeo
+              </button>
+            </div>
+            <div className="field">
+              <label>SoundCloud (opcional)</label>
+              <input
+                type="url"
+                placeholder="Enlace a su perfil o a una pista"
+                maxLength={300}
+                value={newGroupSoundcloud}
+                onChange={(e) => setNewGroupSoundcloud(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label>Repertorio de siempre (opcional)</label>
+              <input
+                type="text"
+                placeholder="Lo que no falla en ningún pueblo, separado por comas"
+                maxLength={500}
+                value={newGroupRepertoire}
+                onChange={(e) => setNewGroupRepertoire(e.target.value)}
+              />
+            </div>
+            {error && <p className="field-error">{error}</p>}
+            <button
+              className="btn btn-primary create-group-submit"
+              onClick={createLocalGroup}
+              disabled={saving || !newGroupName.trim() || !newGroupCategory || !newGroupProvince}
+            >
+              {saving ? "Creando…" : "Crear perfil"}
+            </button>
+            <p className="section-sub field-hint">
+              El botón se activa con el nombre, la categoría y la provincia.
+            </p>
+          </section>
+        </div>
+      )}
+
+      {tab === "bitacora" && (
+        <div className="tab-panel is-active">
+          <div className="page-head">
+            <h2 className="section-title">Mi bitácora</h2>
+            <p className="section-sub">Tus notas, en orden. Solo tú puedes editarlas o borrarlas.</p>
+          </div>
+          <NoteList
+            notes={myNotes}
+            onEdit={openEdit}
+            onDelete={remove}
+            confirmingDelete={confirmingDelete}
+          />
+        </div>
+      )}
     </>
   );
 }

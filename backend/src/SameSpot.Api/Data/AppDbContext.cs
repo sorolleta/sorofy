@@ -18,6 +18,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NoteLike> NoteLikes => Set<NoteLike>();
     public DbSet<NoteComment> NoteComments => Set<NoteComment>();
     public DbSet<CommentLike> CommentLikes => Set<CommentLike>();
+    public DbSet<ConversationRead> ConversationReads => Set<ConversationRead>();
+    public DbSet<GroupFollow> GroupFollows => Set<GroupFollow>();
+    public DbSet<Lista> Listas => Set<Lista>();
+    public DbSet<ListaItem> ListaItems => Set<ListaItem>();
+    public DbSet<ListaSave> ListaSaves => Set<ListaSave>();
+    public DbSet<GroupPhoto> GroupPhotos => Set<GroupPhoto>();
+    public DbSet<GroupVideo> GroupVideos => Set<GroupVideo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -192,6 +199,85 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(m => m.SenderId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Si se borra quien dio de alta el grupo, la ficha sobrevive sin autoría
+        modelBuilder.Entity<MusicItem>()
+            .HasOne(i => i.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(i => i.CreatedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Seguir un grupo local: único por pareja (usuario, grupo)
+        modelBuilder.Entity<GroupFollow>()
+            .HasKey(f => new { f.UserId, f.MusicItemId });
+
+        modelBuilder.Entity<GroupFollow>()
+            .HasOne(f => f.User)
+            .WithMany()
+            .HasForeignKey(f => f.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GroupFollow>()
+            .HasOne(f => f.MusicItem)
+            .WithMany()
+            .HasForeignKey(f => f.MusicItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Lista>()
+            .HasOne(l => l.Curator)
+            .WithMany()
+            .HasForeignKey(l => l.CuratorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ListaItem>()
+            .HasOne(i => i.Lista)
+            .WithMany(l => l.Items)
+            .HasForeignKey(i => i.ListaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ListaItem>()
+            .HasOne(i => i.MusicItem)
+            .WithMany()
+            .HasForeignKey(i => i.MusicItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ListaItem>()
+            .HasOne(i => i.AddedByUser)
+            .WithMany()
+            .HasForeignKey(i => i.AddedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Guardar una estantería es único por pareja (usuario, estantería)
+        modelBuilder.Entity<ListaSave>()
+            .HasKey(s => new { s.UserId, s.ListaId });
+
+        modelBuilder.Entity<ListaSave>()
+            .HasOne(s => s.User)
+            .WithMany()
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ListaSave>()
+            .HasOne(s => s.Lista)
+            .WithMany()
+            .HasForeignKey(s => s.ListaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Una fila por dirección de lectura (yo→él): clave compuesta
+        modelBuilder.Entity<ConversationRead>()
+            .HasKey(r => new { r.UserId, r.OtherUserId });
+
+        modelBuilder.Entity<ConversationRead>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ConversationRead>()
+            .HasOne(r => r.OtherUser)
+            .WithMany()
+            .HasForeignKey(r => r.OtherUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Recipient)
             .WithMany()
@@ -285,6 +371,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(l => l.User)
             .WithMany()
             .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GroupPhoto>()
+            .HasOne(p => p.MusicItem)
+            .WithMany()
+            .HasForeignKey(p => p.MusicItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GroupPhoto>()
+            .HasOne(p => p.UploadedByUser)
+            .WithMany()
+            .HasForeignKey(p => p.UploadedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GroupVideo>()
+            .HasOne(v => v.MusicItem)
+            .WithMany()
+            .HasForeignKey(v => v.MusicItemId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Catálogo inicial de tags estéticos (ids fijos para el seed)

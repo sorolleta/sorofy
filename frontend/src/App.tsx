@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, NavLink, useNavigate } from "react-router-dom";
-import { getToken, clearToken, getMe, loginUrl, needsOnboarding, setNeedsOnboarding } from "./api";
+import { api, getToken, clearToken, getMe, loginUrl, needsOnboarding, setNeedsOnboarding } from "./api";
 import type { MyProfile } from "./types";
 import AuthCallback from "./pages/AuthCallback";
 import Onboarding from "./pages/Onboarding";
@@ -13,6 +13,9 @@ import MusicItemDetail from "./pages/MusicItemDetail";
 import NoteDetail from "./pages/NoteDetail";
 import Chats from "./pages/Chats";
 import ChatThread from "./pages/ChatThread";
+import Ecos from "./pages/Ecos";
+import Listas from "./pages/Listas";
+import ListaDetail from "./pages/ListaDetail";
 
 function SpotifyIcon() {
   return (
@@ -65,10 +68,21 @@ function Login() {
 function Layout({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   const navigate = useNavigate();
   const [me, setMe] = useState<MyProfile | null>(null);
+  const [hasUnreadEcos, setHasUnreadEcos] = useState(false);
 
   useEffect(() => {
     if (!getToken()) return;
     getMe().then(setMe).catch(() => {});
+  }, []);
+
+  // La campana se revisa al entrar y cada 30s, como el "sonando ahora" del feed
+  useEffect(() => {
+    if (!getToken()) return;
+    const check = () =>
+      api.get<{ hasUnread: boolean }>("/api/ecos/has-unread").then((r) => setHasUnreadEcos(r.hasUnread)).catch(() => {});
+    check();
+    const interval = setInterval(check, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   if (!getToken()) return <Navigate to="/" replace />;
@@ -100,6 +114,7 @@ function Layout({ children, wide }: { children: React.ReactNode; wide?: boolean 
         <div className="nav-links">
           <NavLink to="/feed" className={navLink}>Feed</NavLink>
           <NavLink to="/notas" className={navLink}>Notas</NavLink>
+          <NavLink to="/listas" className={navLink}>Listas</NavLink>
           <NavLink to="/gente" className={navLink}>Gente</NavLink>
           <NavLink to="/chats" className={navLink}>Chats</NavLink>
         </div>
@@ -107,6 +122,13 @@ function Layout({ children, wide }: { children: React.ReactNode; wide?: boolean 
           <button className="nav-link" onClick={logout}>
             Salir
           </button>
+          <Link to="/ecos" className="nav-bell" aria-label="Ecos" title="Ecos">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+            </svg>
+            {hasUnreadEcos && <span className="nav-bell-dot" />}
+          </Link>
           <Link to="/perfil" title="Mi perfil">
             {me?.avatarUrl ? (
               <img className="nav-avatar" src={me.avatarUrl} alt="Mi perfil" />
@@ -139,6 +161,9 @@ export default function App() {
         <Route path="/resenas" element={<Navigate to="/notas" replace />} />
         <Route path="/chats" element={<Layout><Chats /></Layout>} />
         <Route path="/chats/:id" element={<Layout><ChatThread /></Layout>} />
+        <Route path="/ecos" element={<Layout><Ecos /></Layout>} />
+        <Route path="/listas" element={<Layout><Listas /></Layout>} />
+        <Route path="/listas/:id" element={<Layout><ListaDetail /></Layout>} />
       </Routes>
     </BrowserRouter>
   );

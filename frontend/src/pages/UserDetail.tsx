@@ -67,7 +67,10 @@ export default function UserDetail() {
         <div>
           <h1 className="profile-name">{profile.displayName}</h1>
           <p className="profile-sub">
-            {profile.followers} seguidores · sigue a {profile.following}
+            {profile.province ? `${profile.province} · ` : ""}
+            {profile.followersCount}{" "}
+            {profile.followersCount === 1 ? "seguidor" : "seguidores"} · sigue a{" "}
+            {profile.followingCount}
           </p>
         </div>
         <div className="profile-actions">

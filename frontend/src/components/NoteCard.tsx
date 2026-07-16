@@ -4,6 +4,7 @@ import type { Note, MusicItem, NoteAuthor, NoteInteractions } from "../types";
 import NoteInteractionsBar from "./NoteInteractionsBar";
 import { soundcloudEmbedUrl, spotifyEmbedUrl, youtubeEmbedUrl } from "./PlatformPlayer";
 import { resolveVibe } from "../vibes";
+import { relativeTime } from "../time";
 
 interface Props {
   note: Note;
@@ -12,6 +13,8 @@ interface Props {
   actions?: React.ReactNode;
   // Si la nota llegó por su ancla, el artista del lector que la trajo
   because?: string | null;
+  // Si es de un grupo local que el lector sigue, cuál
+  becauseFollowedGroup?: string | null;
   // Si es un grupo de la provincia del lector, cuál
   becauseLocal?: string | null;
   // Estado de "me llega" y conversación, cargado por lotes en cada página
@@ -28,7 +31,15 @@ const TYPE_LABEL: Record<MusicItem["type"], string> = {
 // La tarjeta destaca el motivo humano (texto o vibe) y deja el formato
 // en pequeño. Cada tipo tiene su silueta: el artista en grande y circular,
 // el álbum con la carátula a todo el ancho, el resto con carátula pequeña.
-export default function NoteCard({ note, author, actions, because, becauseLocal, interactions }: Props) {
+export default function NoteCard({
+  note,
+  author,
+  actions,
+  because,
+  becauseFollowedGroup,
+  becauseLocal,
+  interactions,
+}: Props) {
   // El player embebido se monta solo al pulsar: el feed no carga iframes.
   // El "escúchalo aquí" de la nota manda sobre el enlace del item: apunta
   // al audio exacto del que habla (la versión en directo, el set...)
@@ -46,6 +57,7 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
   const vibe = note.vibeColor ? resolveVibe(note.vibeColor) : null;
   const isArtistHero = note.item.type === "artist" && Boolean(note.item.imageUrl);
   const isAlbumWide = note.item.type === "album" && Boolean(note.item.imageUrl);
+  const subjectTop = Boolean(author) && !isArtistHero && !isAlbumWide;
 
   const badgeLabel =
     note.item.type === "localGroup"
@@ -62,7 +74,7 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
 
   const date = (
     <span className="note-track-date">
-      {new Date(note.createdAt).toLocaleDateString()}
+      {relativeTime(note.createdAt)}
       {note.updatedAt && " · editada"}
     </span>
   );
@@ -82,6 +94,32 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
             {author.displayName}
           </Link>
         </div>
+      )}
+
+      {/* En el feed (con autor) el asunto va arriba, antes del texto: se ve
+          de qué habla la nota sin leerla entera. En la bitácora se queda
+          abajo, como una firma. */}
+      {subjectTop && (
+        <Link to={`/musica/${note.item.id}`} className="note-subject">
+          {note.item.imageUrl ? (
+            <img className="note-cover" src={note.item.imageUrl} alt="" />
+          ) : (
+            <span
+              className="note-cover cover-placeholder"
+              style={
+                vibe
+                  ? { background: `linear-gradient(135deg, ${vibe.hex}80, ${vibe.hex}26)` }
+                  : undefined
+              }
+            >
+              {note.vibeEmoji ?? (note.item.type === "localGroup" ? "🎺" : "♪")}
+            </span>
+          )}
+          <span className="note-track">
+            <span className="note-track-title">{title}</span>
+            <span className="badge">{badgeLabel}</span>
+          </span>
+        </Link>
       )}
 
       {isArtistHero && (
@@ -106,8 +144,13 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
           <p className="note-text">{note.text}</p>
         </Link>
       )}
-      {note.vibeLabel && vibe && (
-        <span className="vibe-chip" style={{ background: vibe.hex, color: vibe.ink }}>
+      {/* Las notas viejas conservan su color; las nuevas llevan etiqueta
+          en chip neutro */}
+      {note.vibeLabel && (
+        <span
+          className={`vibe-chip${vibe ? "" : " vibe-chip-plain"}`}
+          style={vibe ? { background: vibe.hex, color: vibe.ink } : undefined}
+        >
           {note.vibeEmoji && <span>{note.vibeEmoji}</span>}
           {note.vibeLabel}
         </span>
@@ -118,6 +161,8 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
           genérico son un susurro */}
       {because ? (
         <p className="rec-line rec-personal">Te llega porque escuchas {because}</p>
+      ) : becauseFollowedGroup ? (
+        <p className="rec-line rec-personal">Porque sigues a {becauseFollowedGroup}</p>
       ) : becauseLocal ? (
         <p className="rec-line rec-generic">Cerca de ti · {becauseLocal}</p>
       ) : (
@@ -126,36 +171,43 @@ export default function NoteCard({ note, author, actions, because, becauseLocal,
         )
       )}
 
-      <div className="note-meta">
-        {!isArtistHero && !isAlbumWide && (
-          <Link to={`/musica/${note.item.id}`}>
-            {note.item.imageUrl ? (
-              <img className="note-cover" src={note.item.imageUrl} alt="" />
-            ) : (
-              <span
-                className="note-cover cover-placeholder"
-                // Sin carátula (grupos locales), el hueco toma el color del
-                // vibe de la nota en un degradado tenue; sin vibe, gris neutro
-                style={
-                  vibe
-                    ? { background: `linear-gradient(135deg, ${vibe.hex}80, ${vibe.hex}26)` }
-                    : undefined
-                }
-              >
-                {note.vibeEmoji ?? "♪"}
-              </span>
-            )}
+      {subjectTop ? (
+        <div className="note-meta note-meta-spread">
+          {date}
+          {actions && <div className="note-actions">{actions}</div>}
+        </div>
+      ) : (
+        <div className="note-meta">
+          {!isArtistHero && !isAlbumWide && (
+            <Link to={`/musica/${note.item.id}`}>
+              {note.item.imageUrl ? (
+                <img className="note-cover" src={note.item.imageUrl} alt="" />
+              ) : (
+                <span
+                  className="note-cover cover-placeholder"
+                  // Sin carátula (grupos locales), el hueco toma el color del
+                  // vibe de la nota en un degradado tenue; sin vibe, gris neutro
+                  style={
+                    vibe
+                      ? { background: `linear-gradient(135deg, ${vibe.hex}80, ${vibe.hex}26)` }
+                      : undefined
+                  }
+                >
+                  {note.vibeEmoji ?? "♪"}
+                </span>
+              )}
+            </Link>
+          )}
+          <Link to={`/musica/${note.item.id}`} className="note-track">
+            {!isArtistHero && <span className="note-track-title">{title}</span>}
+            <span className="note-track-sub">
+              {!isArtistHero && <span className="badge">{badgeLabel}</span>}
+              {date}
+            </span>
           </Link>
-        )}
-        <Link to={`/musica/${note.item.id}`} className="note-track">
-          {!isArtistHero && <span className="note-track-title">{title}</span>}
-          <span className="note-track-sub">
-            {!isArtistHero && <span className="badge">{badgeLabel}</span>}
-            {date}
-          </span>
-        </Link>
-        {actions && <div className="note-actions">{actions}</div>}
-      </div>
+          {actions && <div className="note-actions">{actions}</div>}
+        </div>
+      )}
 
       {/* La música que no está en Spotify se escucha aquí dentro,
           sin sacar a nadie del feed */}

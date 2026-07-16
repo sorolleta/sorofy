@@ -69,6 +69,35 @@ public class NoteRepository(AppDbContext db) : INoteRepository
             .Take(limit)
             .ToListAsync();
 
+    // Grupos que sigues: sus notas te llegan aunque no sigas a quien las
+    // escribió (equivalente al follow de usuarios, pero para grupos)
+    public Task<List<Note>> GetRecentForMusicItemsAsync(
+        List<Guid> musicItemIds, List<Guid> excludedAuthorIds, int limit) =>
+        db.Notes.Include(n => n.MusicItem).Include(n => n.User)
+            .Where(n => musicItemIds.Contains(n.MusicItemId)
+                && !excludedAuthorIds.Contains(n.UserId))
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
+    // Para el tracklist de la ficha de álbum: la nota con texto más
+    // reciente de cada canción («suena a volver a casa en bici» — Silvia)
+    public async Task<List<Note>> GetLatestForTrackSpotifyIdsAsync(List<string> trackSpotifyIds)
+    {
+        var candidates = await db.Notes.Include(n => n.MusicItem).Include(n => n.User)
+            .Where(n => n.MusicItem.Type == MusicItemType.Track
+                && n.MusicItem.SpotifyId != null
+                && trackSpotifyIds.Contains(n.MusicItem.SpotifyId)
+                && n.Text != null)
+            .OrderByDescending(n => n.CreatedAt)
+            .ToListAsync();
+
+        return candidates
+            .GroupBy(n => n.MusicItem.SpotifyId)
+            .Select(g => g.First())
+            .ToList();
+    }
+
     // De estas notas, cuáles son del usuario (para saber en qué tarjetas
     // puede ver su señal íntima de "me llega")
     public Task<List<Guid>> GetIdsOwnedByAsync(Guid userId, List<Guid> noteIds) =>
@@ -116,6 +145,19 @@ public class NoteRepository(AppDbContext db) : INoteRepository
         return orderedIds
             .Select(id => items.First(i => i.Id == id))
             .ToList();
+    }
+
+    // Etiquetas de vibe recientes de toda la comunidad, sin repetir, para
+    // sugerir en el picker en vez de un campo 100% libre
+    public async Task<List<string>> GetRecentVibeLabelsAsync(int limit)
+    {
+        var recent = await db.Notes
+            .Where(n => n.VibeLabel != null)
+            .OrderByDescending(n => n.CreatedAt)
+            .Select(n => n.VibeLabel!)
+            .ToListAsync();
+
+        return recent.Distinct().Take(limit).ToList();
     }
 
     public Task AddAsync(Note note) => db.Notes.AddAsync(note).AsTask();

@@ -33,6 +33,7 @@ public class MeController(
             user.DisplayName,
             user.AvatarUrl,
             user.Province,
+            user.CreatedAt,
             Tags = user.Tags.Select(t => t.Name),
             NeedsOnboarding = user.OnboardingCompletedAt is null,
             TopArtists = topArtists.Select(a => new { a.SpotifyArtistId, a.Name, a.Genres, a.Rank, a.ImageUrl }),
