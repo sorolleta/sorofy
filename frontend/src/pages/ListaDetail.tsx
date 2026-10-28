@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../api";
+import { api, getMe, isGuest } from "../api";
 import type { ListaDetail as Detail, LocalGroup, SearchResponse } from "../types";
 
 // Lo que hace falta para proponer una canción: un item de Spotify o un
@@ -26,6 +26,28 @@ export default function ListaDetail() {
   const [pick, setPick] = useState<Pick | null>(null);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Copiar la estantería a una playlist de Spotify (no para invitados)
+  const [canUseSpotify, setCanUseSpotify] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exported, setExported] = useState<{ url: string; added: number; skipped: number } | null>(null);
+  const [exportError, setExportError] = useState("");
+
+  useEffect(() => {
+    getMe().then((me) => setCanUseSpotify(!isGuest(me.spotifyId))).catch(() => {});
+  }, []);
+
+  const exportToSpotify = async () => {
+    setExporting(true);
+    setExportError("");
+    try {
+      setExported(await api.post<{ url: string; added: number; skipped: number }>(`/api/listas/${id}/spotify`));
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : "No se pudo crear la playlist");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const load = () => {
     api
@@ -149,7 +171,24 @@ export default function ListaDetail() {
             <button className="btn btn-quiet btn-sm" onClick={share}>
               {copied ? "¡Copiado!" : "Compartir"}
             </button>
+            {canUseSpotify &&
+              (exported ? (
+                <a className="btn btn-quiet btn-sm" href={exported.url} target="_blank" rel="noreferrer">
+                  ✓ Abrir en Spotify
+                </a>
+              ) : (
+                <button className="btn btn-quiet btn-sm" onClick={exportToSpotify} disabled={exporting}>
+                  {exporting ? "Creando playlist…" : "Guardar en Spotify"}
+                </button>
+              ))}
           </div>
+          {exported && (
+            <p className="section-sub">
+              Playlist creada en tu Spotify con {exported.added} {exported.added === 1 ? "canción" : "canciones"}
+              {exported.skipped > 0 && ` (${exported.skipped} no entran en una playlist: discos o grupos locales)`}.
+            </p>
+          )}
+          {exportError && <p className="error">{exportError}</p>}
         </div>
       </div>
 
@@ -159,16 +198,22 @@ export default function ListaDetail() {
         ) : (
           detail.items.map((item, i) => (
             <div key={item.id} className="lista-song-row" style={i === 0 ? { borderTop: "none" } : undefined}>
-              {item.musicItem.imageUrl ? (
-                <img className="eco-cover" src={item.musicItem.imageUrl} alt="" />
-              ) : (
-                <span className="eco-cover cover-placeholder">♪</span>
-              )}
+              <Link to={`/musica/${item.musicItem.id}`} aria-label={item.musicItem.name}>
+                {item.musicItem.imageUrl ? (
+                  <img className="eco-cover" src={item.musicItem.imageUrl} alt="" />
+                ) : (
+                  <span className="eco-cover cover-placeholder">♪</span>
+                )}
+              </Link>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="note-track-title" style={{ color: "var(--text)", fontSize: "var(--fs-body)" }}>
+                <Link
+                  to={`/musica/${item.musicItem.id}`}
+                  className="note-track-title lista-song-link"
+                  style={{ color: "var(--text)", fontSize: "var(--fs-body)" }}
+                >
                   {item.musicItem.name}
                   {item.musicItem.artistName && ` — ${item.musicItem.artistName}`}
-                </div>
+                </Link>
                 <div className="lista-song-note">«{item.text}» — {item.addedBy.displayName}</div>
               </div>
               {item.canRemove && (

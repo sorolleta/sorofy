@@ -12,6 +12,7 @@ import NoteCard from "../components/NoteCard";
 import { loadInteractions } from "../components/NoteInteractionsBar";
 import PlatformPlayer from "../components/PlatformPlayer";
 import { resolveVibe } from "../vibes";
+import AddToLista from "../components/AddToLista";
 
 const TYPE_LABEL: Record<string, string> = {
   album: "álbum",
@@ -247,6 +248,7 @@ export default function MusicItemDetail() {
               <button className="btn btn-primary btn-sm" onClick={writeNote}>
                 Escribir una nota
               </button>
+              <AddToLista musicItemId={item.id} />
               {item.spotifyId && (
                 <a
                   className="btn btn-quiet btn-sm"

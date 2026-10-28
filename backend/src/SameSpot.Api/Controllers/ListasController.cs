@@ -16,6 +16,8 @@ namespace SameSpot.Api.Controllers;
 public class ListasController(
     IListaRepository listas,
     IMusicItemRepository items,
+    IUserRepository users,
+    SpotifyApiService spotify,
     MusicItemResolverService resolver) : ControllerBase
 {
     private const int GridLimit = 30;
@@ -56,6 +58,63 @@ public class ListasController(
 
         var withCurator = await listas.GetByIdAsync(lista.Id);
         return CreatedAtAction(nameof(GetDetail), new { id = lista.Id }, ToDetailResponse(withCurator!, User.GetUserId()));
+    }
+
+    // Mis estanterías, para elegir dónde añadir desde una ficha
+    [HttpGet("mine")]
+    public async Task<IActionResult> GetMine()
+    {
+        var mine = await listas.GetByCuratorAsync(User.GetUserId());
+        return Ok(mine.Select(ToCardResponse));
+    }
+
+    // Copia la estantería a una playlist privada nueva en el Spotify de quien
+    // la pide. Solo entran las canciones: discos, artistas y grupos locales
+    // no caben en una playlist, y se cuentan aparte para avisar.
+    [HttpPost("{id:guid}/spotify")]
+    public async Task<IActionResult> ExportToSpotify(Guid id)
+    {
+        var lista = await listas.GetByIdAsync(id);
+        if (lista is null) return NotFound();
+
+        var myId = User.GetUserId();
+        var me = await users.GetByIdAsync(myId);
+        if (me is null || me.SpotifyId.StartsWith(AuthController.GuestPrefix))
+        {
+            return BadRequest(new { message = "Entra con Spotify para guardar estanterías en tu cuenta." });
+        }
+
+        var trackIds = lista.Items
+            .OrderBy(i => i.CreatedAt)
+            .Where(i => i.MusicItem.Type == MusicItemType.Track && i.MusicItem.SpotifyId is not null)
+            .Select(i => i.MusicItem.SpotifyId!)
+            .Distinct()
+            .ToList();
+        if (trackIds.Count == 0)
+        {
+            return BadRequest(new { message = "Esta estantería no tiene canciones que meter en una playlist." });
+        }
+
+        try
+        {
+            var description = $"Estantería de {lista.Curator.DisplayName} en Sorofy" +
+                              (lista.Mood is null ? "" : $": {lista.Mood}");
+            var playlistId = await spotify.CreatePlaylistAsync(myId, lista.Title, description);
+            await spotify.AddPlaylistTracksAsync(myId, playlistId, trackIds);
+            return Ok(new
+            {
+                Url = $"https://open.spotify.com/playlist/{playlistId}",
+                Added = trackIds.Count,
+                Skipped = lista.Items.Count - trackIds.Count,
+            });
+        }
+        catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            return BadRequest(new
+            {
+                message = "Spotify no nos deja tocar tus playlists todavía: cierra sesión y vuelve a entrar para conceder el permiso.",
+            });
+        }
     }
 
     [HttpGet("{id:guid}")]

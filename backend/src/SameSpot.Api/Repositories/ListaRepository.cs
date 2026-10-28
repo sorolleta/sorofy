@@ -16,6 +16,14 @@ public class ListaRepository(AppDbContext db) : IListaRepository
             .Take(limit)
             .ToListAsync();
 
+    public Task<List<Lista>> GetByCuratorAsync(Guid curatorId) =>
+        db.Listas
+            .Include(l => l.Curator)
+            .Include(l => l.Items).ThenInclude(i => i.MusicItem)
+            .Where(l => l.CuratorId == curatorId)
+            .OrderByDescending(l => l.CreatedAt)
+            .ToListAsync();
+
     public Task<Lista?> GetByIdAsync(Guid id) =>
         db.Listas
             .Include(l => l.Curator)

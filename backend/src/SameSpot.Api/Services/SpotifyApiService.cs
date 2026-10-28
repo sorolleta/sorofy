@@ -84,6 +84,17 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
             new { uris = new[] { $"spotify:track:{trackId}" } });
     }
 
+    // Varias canciones de golpe (Spotify admite hasta 100 por llamada)
+    public async Task AddPlaylistTracksAsync(Guid userId, string playlistId, IEnumerable<string> trackIds)
+    {
+        foreach (var chunk in trackIds.Chunk(100))
+        {
+            await PostAsync<object>(
+                userId, $"https://api.spotify.com/v1/playlists/{Uri.EscapeDataString(playlistId)}/items",
+                new { uris = chunk.Select(id => $"spotify:track:{id}").ToArray() });
+        }
+    }
+
     // Spotify responde 404 si el id no existe y 400 si ni siquiera tiene
     // formato de id: para nosotros ambos significan "no existe"
     private async Task<T?> GetItemOrNullAsync<T>(Guid userId, string url) where T : class
