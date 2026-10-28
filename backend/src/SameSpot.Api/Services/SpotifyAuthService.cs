@@ -9,8 +9,10 @@ namespace SameSpot.Api.Services;
 // Habla con accounts.spotify.com (OAuth) y con el perfil del usuario.
 public class SpotifyAuthService(HttpClient http, IOptions<SpotifyOptions> options)
 {
-    // playlist-modify-private: para la playlist "Mis Descubrimientos"
-    private const string Scopes = "user-read-private user-top-read user-read-currently-playing playlist-modify-private";
+    // playlist-modify-private: para la playlist "Mis Descubrimientos" y
+    // guardar estanterías; playlist-read-*: para importar tus playlists
+    private const string Scopes = "user-read-private user-top-read user-read-currently-playing " +
+                                  "playlist-modify-private playlist-read-private playlist-read-collaborative";
     private readonly SpotifyOptions _options = options.Value;
 
     public string BuildAuthorizeUrl(string state)

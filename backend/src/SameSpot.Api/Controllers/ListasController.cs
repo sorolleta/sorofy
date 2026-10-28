@@ -18,7 +18,8 @@ public class ListasController(
     IMusicItemRepository items,
     IUserRepository users,
     SpotifyApiService spotify,
-    MusicItemResolverService resolver) : ControllerBase
+    MusicItemResolverService resolver,
+    ILogger<ListasController> logger) : ControllerBase
 {
     private const int GridLimit = 30;
 
@@ -156,6 +157,12 @@ public class ListasController(
         }
 
         var myId = User.GetUserId();
+        var me = await users.GetByIdAsync(myId);
+        if (me is null || me.SpotifyId.StartsWith(AuthController.GuestPrefix))
+        {
+            return BadRequest(new { message = "Para importar tus playlists tienes que entrar con Spotify (los invitados no tienen cuenta conectada)." });
+        }
+
         SpotifyPlaylistContent? playlist;
         try
         {
@@ -163,7 +170,14 @@ public class ListasController(
         }
         catch (HttpRequestException e) when (e.StatusCode is System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.Unauthorized)
         {
-            return BadRequest(new { message = "Spotify no nos deja leer esa playlist. Prueba con una tuya o que sea pública." });
+            // Lo normal: la sesión es de antes de pedir el permiso de leer
+            // playlists, o la playlist es de otra persona (Spotify, desde
+            // 2026, solo deja a las apps en desarrollo leer las tuyas)
+            logger.LogWarning(e, "Importar playlist {Playlist}: Spotify respondió {Status}", playlistId, e.StatusCode);
+            return BadRequest(new
+            {
+                message = "Spotify no nos deja leer esa playlist. Cierra sesión y vuelve a entrar con Spotify para dar el permiso de leer tus playlists. Si aun así falla, comprueba que la playlist la creaste tú: Spotify no deja importar las de otras personas.",
+            });
         }
         // Spotify no deja a las apps nuevas leer sus playlists oficiales (Top 50,
         // Daily Mix, Descubrimiento semanal...): responden como si no existieran
