@@ -144,7 +144,9 @@ public record SpotifyTrackDto(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("artists")] List<SpotifyArtistBriefDto> Artists);
 
-public record SpotifyArtistBriefDto([property: JsonPropertyName("name")] string Name);
+public record SpotifyArtistBriefDto(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("id")] string? Id = null);
 
 public record SpotifyNowPlayingDto(
     [property: JsonPropertyName("is_playing")] bool IsPlaying,

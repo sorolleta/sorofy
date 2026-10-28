@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, getMyUserId } from "../api";
 import type {
   Affinity,
@@ -7,6 +7,7 @@ import type {
   Note,
   NoteAuthor,
   NoteInteractions,
+  TrackExtra,
 } from "../types";
 import NoteCard from "../components/NoteCard";
 import NoteInteractionsBar, { loadInteractions } from "../components/NoteInteractionsBar";
@@ -55,6 +56,9 @@ export default function NoteDetail() {
   // Si sigo a quien la escribió, para el botón del hero
   const [followingAuthor, setFollowingAuthor] = useState<boolean | null>(null);
   const [error, setError] = useState("");
+  // El disco de la canción, para el botón "Ficha del disco" del panel
+  const [albumSpotifyId, setAlbumSpotifyId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const myId = getMyUserId();
 
@@ -63,6 +67,7 @@ export default function NoteDetail() {
     setOthers([]);
     setCommonArtists([]);
     setError("");
+    setAlbumSpotifyId(null);
 
     api
       .get<NoteDetailResponse>(`/api/notes/${id}`)
@@ -73,6 +78,9 @@ export default function NoteDetail() {
         const itemDetail = await api
           .get<MusicItemDetail>(`/api/music-items/${d.note.item.id}`)
           .catch(() => null);
+        if (itemDetail?.item.type === "track") {
+          setAlbumSpotifyId((itemDetail.extra as TrackExtra | null)?.album?.spotifyId ?? null);
+        }
         const otherNotes = itemDetail?.notes.filter((n) => n.note.id !== d.note.id) ?? [];
         setOthers(otherNotes);
         loadInteractions([d.note.id, ...otherNotes.map((n) => n.note.id)])
@@ -291,9 +299,24 @@ export default function NoteDetail() {
                 </span>
               </span>
             </Link>
-            <Link to={`/musica/${item.id}`} className="btn btn-quiet btn-sm panel-cta">
-              Ver la ficha
-            </Link>
+            <div className="panel-cta-row">
+              <Link to={`/musica/${item.id}`} className="btn btn-quiet btn-sm">
+                {item.type === "track" ? "Ficha de la canción" : "Ver la ficha"}
+              </Link>
+              {albumSpotifyId && (
+                <button
+                  className="btn btn-quiet btn-sm"
+                  onClick={() =>
+                    api
+                      .get<{ id: string }>(`/api/music-items/resolve?type=album&spotifyId=${albumSpotifyId}`)
+                      .then((r) => navigate(`/musica/${r.id}`))
+                      .catch(() => {})
+                  }
+                >
+                  Ficha del disco
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="panel">

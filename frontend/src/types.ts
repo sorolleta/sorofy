@@ -97,6 +97,11 @@ export interface AlbumExtra {
   totalTracks: number | null;
   totalDurationMin: number;
   tracks: AlbumTrackRow[];
+  // Otros discos del mismo artista, para el panel "Más de X"
+  moreFromArtist: {
+    artistName: string;
+    albums: { spotifyId: string; name: string; imageUrl: string | null }[];
+  } | null;
 }
 
 export interface TrackExtra {

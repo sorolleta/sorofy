@@ -149,6 +149,15 @@ public class MusicItemsController(
                     var hints = await notes.GetLatestForTrackSpotifyIdsAsync(
                         album.Tracks.Items.Select(t => t.Id).ToList());
 
+                    // "Más de X": otros discos del artista principal, sin este
+                    var mainArtist = album.Artists.FirstOrDefault();
+                    var moreAlbums = mainArtist?.Id is null
+                        ? []
+                        : (await spotify.GetArtistAlbumsAsync(myId, mainArtist.Id, 6))
+                            .Where(a => a.Id != item.SpotifyId && a.Name != album.Name)
+                            .Take(3)
+                            .ToList();
+
                     return new
                     {
                         ReleaseYear = ReleaseYearOf(album.ReleaseDate),
@@ -170,6 +179,16 @@ public class MusicItemsController(
                                 })
                                 .FirstOrDefault(),
                         }),
+                        MoreFromArtist = moreAlbums.Count == 0 ? null : new
+                        {
+                            ArtistName = mainArtist!.Name,
+                            Albums = moreAlbums.Select(a => new
+                            {
+                                SpotifyId = a.Id,
+                                a.Name,
+                                ImageUrl = a.Images?.FirstOrDefault()?.Url,
+                            }),
+                        },
                     };
                 }
                 case MusicItemType.Track:

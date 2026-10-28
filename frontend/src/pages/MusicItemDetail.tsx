@@ -449,6 +449,31 @@ export default function MusicItemDetail() {
             </div>
           )}
 
+          {albumExtra?.moreFromArtist && (
+            <div className="panel">
+              <h3 className="section-title panel-title">Más de {albumExtra.moreFromArtist.artistName}</h3>
+              <div className="mini-covers">
+                {albumExtra.moreFromArtist.albums.map((album) => (
+                  <button
+                    key={album.spotifyId}
+                    className="mini-cover-btn"
+                    title={album.name}
+                    onClick={() => goToSpotifyItem("album", album.spotifyId)}
+                  >
+                    {album.imageUrl ? (
+                      <img src={album.imageUrl} alt={album.name} />
+                    ) : (
+                      <span className="cover-placeholder">♪</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="mini-covers-names">
+                {albumExtra.moreFromArtist.albums.map((a) => a.name).join(" · ")}
+              </p>
+            </div>
+          )}
+
           {artistExtra && artistExtra.albums.length > 0 && (
             <div className="panel">
               <h3 className="section-title panel-title">Discos</h3>
