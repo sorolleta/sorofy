@@ -25,6 +25,21 @@ export async function getMe(): Promise<MyProfile> {
   return cachedMe;
 }
 
+// Entrar sin Spotify: la API crea una cuenta de invitado nueva
+export async function loginAsGuest(): Promise<void> {
+  const response = await fetch(`${API_URL}/api/auth/guest`, { method: "POST" });
+  if (!response.ok) {
+    throw new Error(response.status === 429 ? "Mucha gente entrando a la vez, prueba en un minuto" : "No se pudo entrar");
+  }
+  const { token } = (await response.json()) as { token: string };
+  setToken(token);
+  setNeedsOnboarding(true);
+}
+
+export function isGuest(spotifyId: string | undefined): boolean {
+  return spotifyId?.startsWith("guest-") ?? false;
+}
+
 export function loginUrl(): string {
   return `${API_URL}/api/auth/spotify/login`;
 }

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SameSpot.Api.Models;
 using SameSpot.Api.Repositories;
 using SameSpot.Api.Services;
@@ -17,6 +18,30 @@ public class AuthController(
     IConfiguration config) : ControllerBase
 {
     private const string StateCookie = "spotify_auth_state";
+    // Los invitados entran sin Spotify: Spotify solo deja usar la app a 5
+    // usuarios en modo desarrollo, y así cualquiera puede ver la demo
+    public const string GuestPrefix = "guest-";
+
+    // Crea una cuenta de invitado nueva y devuelve su JWT. Cada visitante
+    // tiene la suya, así sus notas y seguidos no se mezclan con los de otros.
+    [HttpPost("guest")]
+    [EnableRateLimiting("guest")]
+    public async Task<IActionResult> Guest()
+    {
+        var suffix = Convert.ToHexString(RandomNumberGenerator.GetBytes(4)).ToLowerInvariant();
+        var number = RandomNumberGenerator.GetInt32(1000, 10000);
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            SpotifyId = GuestPrefix + suffix,
+            DisplayName = $"Invitado {number}",
+            AvatarUrl = $"https://api.dicebear.com/9.x/notionists/svg?seed={suffix}&backgroundColor=efd35d",
+        };
+        await users.AddAsync(user);
+        await users.SaveChangesAsync();
+
+        return Ok(new { token = jwt.CreateToken(user) });
+    }
 
     // Punto de entrada del login: redirige a la pantalla de permisos de Spotify
     [HttpGet("spotify/login")]

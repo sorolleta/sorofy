@@ -52,6 +52,10 @@ public class MeController(
     {
         var userId = User.GetUserId();
         var fetchedAt = DateTime.UtcNow;
+        if (await IsGuestAsync(userId))
+        {
+            return BadRequest(new { message = "Los invitados no tienen Spotify conectado." });
+        }
 
         var spotifyArtists = await spotify.GetTopArtistsAsync(userId);
         var spotifyTracks = await spotify.GetTopTracksAsync(userId);
@@ -90,6 +94,7 @@ public class MeController(
     public async Task<IActionResult> NowPlaying()
     {
         var userId = User.GetUserId();
+        if (await IsGuestAsync(userId)) return Ok(new { playing = false });
         var nowPlaying = await spotify.GetNowPlayingAsync(userId);
 
         if (nowPlaying?.Item is null || !nowPlaying.IsPlaying)
@@ -104,4 +109,7 @@ public class MeController(
             artist = string.Join(", ", nowPlaying.Item.Artists.Select(a => a.Name)),
         });
     }
+
+    private async Task<bool> IsGuestAsync(Guid userId) =>
+        (await users.GetByIdAsync(userId))?.SpotifyId.StartsWith(AuthController.GuestPrefix) ?? false;
 }

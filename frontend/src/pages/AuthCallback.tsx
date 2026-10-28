@@ -17,7 +17,7 @@ export default function AuthCallback() {
     }
     setToken(token);
     // Limpiar el token de la URL antes de seguir
-    window.history.replaceState(null, "", "/auth/callback");
+    window.history.replaceState(null, "", `${import.meta.env.BASE_URL}auth/callback`.replace("//", "/"));
 
     // El primer login pasa por el onboarding; los demás van al feed
     api

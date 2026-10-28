@@ -43,7 +43,8 @@ public class DiscoveryService(
         }
 
         var me = (await users.GetByIdAsync(myId))!;
-        try
+        var isGuest = me.SpotifyId.StartsWith(Controllers.AuthController.GuestPrefix);
+        if (!isGuest) try
         {
             if (me.DiscoveriesPlaylistId is null)
             {

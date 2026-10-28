@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, getMyUserId } from "../api";
+import { api, getMyUserId, isGuest } from "../api";
 import type { MyProfile, NowPlaying, Note, UserProfile } from "../types";
 import { useNavigate } from "react-router-dom";
 import TopsPanel from "../components/TopsPanel";
@@ -88,9 +88,12 @@ export default function Profile() {
           </div>
         )}
         <div className="profile-actions">
-          <button className="btn btn-quiet btn-sm" onClick={sync} disabled={syncing}>
-            {syncing ? "Sincronizando…" : "Sincronizar con Spotify"}
-          </button>
+          {/* Los invitados no tienen Spotify del que traer sus tops */}
+          {!isGuest(profile.spotifyId) && (
+            <button className="btn btn-quiet btn-sm" onClick={sync} disabled={syncing}>
+              {syncing ? "Sincronizando…" : "Sincronizar con Spotify"}
+            </button>
+          )}
           {/* El mismo onboarding sirve para editar: repetirlo reemplaza */}
           <button className="btn btn-quiet btn-sm" onClick={() => navigate("/onboarding")}>
             Editar perfil

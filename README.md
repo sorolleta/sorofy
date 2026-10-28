@@ -69,4 +69,7 @@ a los grupos se pierden al redesplegar.
 ## Nota sobre Spotify
 
 Las apps de Spotify en modo desarrollo solo admiten 5 usuarios de prueba
-añadidos a mano. Si quieres probar la app, pídeme que te añada.
+añadidos a mano. Por eso la demo tiene **Entrar como invitado**: crea una
+cuenta temporal sin Spotify con la que puedes ver el feed, los perfiles y las
+listas y escribir notas (las búsquedas usan el token de la propia app).
+Lo único que no tienen los invitados son sus tops y el "sonando ahora".

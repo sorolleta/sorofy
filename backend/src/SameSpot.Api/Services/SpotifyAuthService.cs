@@ -48,6 +48,20 @@ public class SpotifyAuthService(HttpClient http, IOptions<SpotifyOptions> option
         return await PostTokenRequestAsync(form);
     }
 
+    // Token de la propia app (client credentials): sirve para buscar y leer el
+    // catálogo en nombre de los invitados, que no tienen cuenta de Spotify.
+    // Se cachea entre peticiones hasta un minuto antes de que caduque.
+    private static string? _appToken;
+    private static DateTime _appTokenExpiresAt;
+
+    public async Task<string> GetAppTokenAsync()
+    {
+        if (_appToken is not null && _appTokenExpiresAt > DateTime.UtcNow) return _appToken;
+        var response = await PostTokenRequestAsync(new() { ["grant_type"] = "client_credentials" });
+        _appTokenExpiresAt = DateTime.UtcNow.AddSeconds(response.ExpiresIn - 60);
+        return _appToken = response.AccessToken;
+    }
+
     public async Task<SpotifyUserProfile> GetProfileAsync(string accessToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.spotify.com/v1/me");

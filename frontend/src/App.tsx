@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, NavLink, useNavigate } from "react-router-dom";
-import { api, getToken, clearToken, getMe, loginUrl, needsOnboarding, setNeedsOnboarding } from "./api";
+import { api, getToken, clearToken, getMe, loginUrl, loginAsGuest, needsOnboarding, setNeedsOnboarding } from "./api";
 import type { MyProfile } from "./types";
 import AuthCallback from "./pages/AuthCallback";
 import Onboarding from "./pages/Onboarding";
@@ -40,7 +40,20 @@ const collageTiles = [
 ];
 
 function Login() {
+  const navigate = useNavigate();
+  const [guestState, setGuestState] = useState<"idle" | "loading" | string>("idle");
   if (getToken()) return <Navigate to="/feed" replace />;
+
+  const enterAsGuest = async () => {
+    setGuestState("loading");
+    try {
+      await loginAsGuest();
+      navigate("/onboarding", { replace: true });
+    } catch (e) {
+      setGuestState(e instanceof Error ? e.message : "No se pudo entrar");
+    }
+  };
+
   return (
     <div className="hero">
       <div className="hero-collage" aria-hidden="true">
@@ -59,7 +72,13 @@ function Login() {
           <SpotifyIcon />
           Entrar con Spotify
         </a>
-        <p className="note-track-date">Gratis. Tu música se queda en tu Spotify.</p>
+        <button className="btn btn-ghost" onClick={enterAsGuest} disabled={guestState === "loading"}>
+          {guestState === "loading" ? "Entrando…" : "Entrar como invitado"}
+        </button>
+        {guestState !== "idle" && guestState !== "loading" && <p className="error">{guestState}</p>}
+        <p className="note-track-date">
+          Gratis. Tu música se queda en tu Spotify. ¿Sin acceso con Spotify? Entra como invitado y echa un vistazo.
+        </p>
       </div>
     </div>
   );

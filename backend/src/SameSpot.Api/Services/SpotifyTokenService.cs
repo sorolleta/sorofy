@@ -11,8 +11,10 @@ public class SpotifyTokenService(ISpotifyTokenRepository tokens, SpotifyAuthServ
 
     public async Task<string> GetValidAccessTokenAsync(Guid userId)
     {
-        var token = await tokens.GetByUserIdAsync(userId)
-            ?? throw new InvalidOperationException($"El usuario {userId} no tiene token de Spotify.");
+        var token = await tokens.GetByUserIdAsync(userId);
+        // Invitados y perfiles de demo no tienen Spotify: usan el token de la
+        // app, que vale para el catálogo (búsquedas, fichas) pero no para /me/*
+        if (token is null) return await spotifyAuth.GetAppTokenAsync();
 
         if (token.ExpiresAt - ExpiryMargin > DateTime.UtcNow)
         {
