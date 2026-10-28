@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import type { ListaDetail as Detail, LocalGroup, SearchResponse } from "../types";
 
@@ -115,7 +115,7 @@ export default function ListaDetail() {
 
   return (
     <div className="app-col" style={{ maxWidth: 720 }}>
-      <a className="back-link" href="/listas">← Estanterías</a>
+      <Link className="back-link" to="/listas">← Estanterías</Link>
 
       <div className="lista-hero">
         <div className="lista-hero-collage">

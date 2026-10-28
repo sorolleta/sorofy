@@ -145,7 +145,7 @@ function Layout({ children, wide }: { children: React.ReactNode; wide?: boolean 
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

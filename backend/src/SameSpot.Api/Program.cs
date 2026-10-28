@@ -13,8 +13,14 @@ DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// En Render la BD llega como DATABASE_URL (postgres://user:pass@host:port/db);
+// en local y Docker Compose, como ConnectionStrings:Default
+var connectionString = builder.Configuration["DATABASE_URL"] is { Length: > 0 } databaseUrl
+    ? ConnectionStringFromUrl(databaseUrl)
+    : builder.Configuration.GetConnectionString("Default");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    options.UseNpgsql(connectionString));
 
 // Las opciones se leen de variables de entorno planas (.env en local, Docker/hosting en prod)
 builder.Services.Configure<SpotifyOptions>(o =>
@@ -92,11 +98,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// El frontend (Vite) corre en otro origen durante el desarrollo
+// El frontend corre en otro origen: Vite en desarrollo y FRONTEND_URL en producción
+var allowedOrigins = new List<string> { "http://localhost:5173", "http://127.0.0.1:5173" };
+if (builder.Configuration["FRONTEND_URL"] is { Length: > 0 } frontendUrl)
+{
+    // El origen es solo esquema + host (sin la ruta /sorofy de GitHub Pages)
+    allowedOrigins.Add(new Uri(frontendUrl).GetLeftPart(UriPartial.Authority));
+}
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy => policy
-        .WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+        .WithOrigins(allowedOrigins.ToArray())
         .AllowAnyHeader()
         .AllowAnyMethod());
 });
@@ -107,6 +119,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Aplica las migraciones pendientes al arrancar, así el deploy crea las tablas solo
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
 
 // Las fotos de los grupos locales se guardan en disco (wwwroot/uploads) y
 // se sirven como estáticos: es un proyecto de portfolio, no hace falta un
@@ -128,3 +146,13 @@ app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
+
+static string ConnectionStringFromUrl(string url)
+{
+    var uri = new Uri(url);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var port = uri.Port > 0 ? uri.Port : 5432;
+    return $"Host={uri.Host};Port={port};Database={uri.AbsolutePath.TrimStart('/')};" +
+           $"Username={Uri.UnescapeDataString(userInfo[0])};Password={Uri.UnescapeDataString(userInfo[1])};" +
+           "SSL Mode=Prefer";
+}

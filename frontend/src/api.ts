@@ -65,7 +65,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (response.status === 401) {
     clearToken();
-    window.location.href = "/";
+    window.location.href = import.meta.env.BASE_URL;
     throw new Error("Sesión caducada");
   }
   if (!response.ok) {

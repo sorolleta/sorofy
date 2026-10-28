@@ -4,6 +4,8 @@ Red social musical *slow*: compartes lo que escuchas con contexto, no con ruido.
 Te conectas con tu cuenta de Spotify y la app importa tus artistas y canciones
 favoritas para encontrarte gente con gustos parecidos.
 
+**Demo:** https://sorolleta.github.io/sorofy
+
 ## Qué se puede hacer
 
 - **Notas** — escribe por qué te importa una canción o un disco, con enlace para escucharlo.
@@ -49,6 +51,17 @@ Necesitas Docker, Node 20+ y una app registrada en Spotify
    npm run dev
    ```
    Abre `http://localhost:5173`.
+
+## Despliegue
+
+- **Frontend** → GitHub Pages, automático en cada push a `main`
+  ([workflow](.github/workflows/deploy-frontend.yml)).
+- **API + PostgreSQL** → Render, definido en [render.yaml](render.yaml).
+  Al arrancar, la API aplica sola las migraciones.
+
+En el plan gratis de Render la API se duerme tras 15 minutos sin uso
+(la primera petición tarda ~1 minuto en despertarla) y las fotos subidas
+a los grupos se pierden al redesplegar.
 
 ## Nota sobre Spotify
 
