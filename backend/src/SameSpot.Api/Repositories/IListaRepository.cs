@@ -9,6 +9,7 @@ public interface IListaRepository
     // Las que cura un usuario, para "Añadir a una estantería"
     Task<List<Lista>> GetByCuratorAsync(Guid curatorId);
     Task AddAsync(Lista lista);
+    void Remove(Lista lista);
 
     Task<ListaItem?> GetItemAsync(Guid itemId);
     Task AddItemAsync(ListaItem item);

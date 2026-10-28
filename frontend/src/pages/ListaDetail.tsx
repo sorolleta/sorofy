@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, getMe, isGuest } from "../api";
 import type { ListaDetail as Detail, LocalGroup, SearchResponse } from "../types";
 
@@ -32,6 +32,19 @@ export default function ListaDetail() {
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState<{ url: string; added: number; skipped: number } | null>(null);
   const [exportError, setExportError] = useState("");
+
+  // Borrar la estantería: hay que pulsar dos veces, como al borrar una nota
+  const navigate = useNavigate();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteLista = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+    await api.delete(`/api/listas/${id}`);
+    navigate("/listas", { replace: true });
+  };
 
   useEffect(() => {
     getMe().then((me) => setCanUseSpotify(!isGuest(me.spotifyId))).catch(() => {});
@@ -182,6 +195,11 @@ export default function ListaDetail() {
                 </button>
               ))}
           </div>
+          {detail.isMine && (
+            <button className="btn-link" style={{ alignSelf: "flex-start" }} onClick={deleteLista}>
+              {confirmDelete ? "¿Seguro? Pulsa otra vez para borrarla" : "Borrar estantería"}
+            </button>
+          )}
           {exported && (
             <p className="section-sub">
               Playlist creada en tu Spotify con {exported.added} {exported.added === 1 ? "canción" : "canciones"}

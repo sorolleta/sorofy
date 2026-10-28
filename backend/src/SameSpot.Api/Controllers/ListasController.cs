@@ -60,6 +60,19 @@ public class ListasController(
         return CreatedAtAction(nameof(GetDetail), new { id = lista.Id }, ToDetailResponse(withCurator!, User.GetUserId()));
     }
 
+    // Solo quien la cura puede borrar la estantería entera
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var lista = await listas.GetByIdAsync(id);
+        if (lista is null) return NotFound();
+        if (lista.CuratorId != User.GetUserId()) return Forbid();
+
+        listas.Remove(lista);
+        await listas.SaveChangesAsync();
+        return NoContent();
+    }
+
     // Mis estanterías, para elegir dónde añadir desde una ficha
     [HttpGet("mine")]
     public async Task<IActionResult> GetMine()

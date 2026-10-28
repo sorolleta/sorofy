@@ -33,6 +33,9 @@ public class ListaRepository(AppDbContext db) : IListaRepository
 
     public async Task AddAsync(Lista lista) => await db.Listas.AddAsync(lista);
 
+    // Sus canciones y los "guardados" se van con ella (borrado en cascada)
+    public void Remove(Lista lista) => db.Listas.Remove(lista);
+
     public Task<ListaItem?> GetItemAsync(Guid itemId) =>
         db.ListaItems.FirstOrDefaultAsync(i => i.Id == itemId);
 
