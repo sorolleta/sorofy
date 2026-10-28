@@ -108,7 +108,7 @@ export default function ListaDetail() {
   };
 
   const propose = async () => {
-    if (!pick || !text.trim()) return;
+    if (!pick || (!detail?.isMine && !text.trim())) return;
     setSaving(true);
     setError("");
     try {
@@ -232,7 +232,11 @@ export default function ListaDetail() {
                   {item.musicItem.name}
                   {item.musicItem.artistName && ` — ${item.musicItem.artistName}`}
                 </Link>
-                <div className="lista-song-note">«{item.text}» — {item.addedBy.displayName}</div>
+                {item.text ? (
+                  <div className="lista-song-note">«{item.text}» — {item.addedBy.displayName}</div>
+                ) : (
+                  <div className="lista-song-note">{item.musicItem.type === "track" ? "canción" : item.musicItem.type === "album" ? "disco" : "grupo local"}</div>
+                )}
               </div>
               {item.canRemove && (
                 <button className="btn-link" onClick={() => removeItem(item.id)}>
@@ -304,7 +308,7 @@ export default function ListaDetail() {
             <p className="section-sub">Proponiendo <strong style={{ color: "var(--text)" }}>{pick.name}</strong></p>
             <div className="field">
               <textarea
-                placeholder="¿Por qué encaja aquí?"
+                placeholder={detail.isMine ? "¿Por qué encaja aquí? (opcional)" : "¿Por qué encaja aquí?"}
                 maxLength={300}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -312,8 +316,8 @@ export default function ListaDetail() {
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button className="btn btn-quiet btn-sm" onClick={() => setPick(null)}>Cancelar</button>
-              <button className="btn btn-primary btn-sm" onClick={propose} disabled={saving || !text.trim()}>
-                {saving ? "Añadiendo…" : "Proponer una canción"}
+              <button className="btn btn-primary btn-sm" onClick={propose} disabled={saving || (!detail.isMine && !text.trim())}>
+                {saving ? "Añadiendo…" : detail.isMine ? "Añadir" : "Proponer una canción"}
               </button>
             </div>
           </>

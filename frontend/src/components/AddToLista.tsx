@@ -21,7 +21,7 @@ export default function AddToLista({ musicItemId }: { musicItemId: string }) {
   };
 
   const add = async () => {
-    if (!listaId || !text.trim()) return;
+    if (!listaId) return;
     setSaving(true);
     setError("");
     try {
@@ -71,7 +71,7 @@ export default function AddToLista({ musicItemId }: { musicItemId: string }) {
               </div>
               <div className="field">
                 <textarea
-                  placeholder="¿Por qué encaja ahí?"
+                  placeholder="¿Por qué encaja ahí? (opcional)"
                   maxLength={300}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -82,7 +82,7 @@ export default function AddToLista({ musicItemId }: { musicItemId: string }) {
                 className="btn btn-primary btn-sm"
                 style={{ alignSelf: "flex-end" }}
                 onClick={add}
-                disabled={saving || !listaId || !text.trim()}
+                disabled={saving || !listaId}
               >
                 {saving ? "Añadiendo…" : "Añadir"}
               </button>

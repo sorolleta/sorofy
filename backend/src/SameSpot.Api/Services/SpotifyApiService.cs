@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SameSpot.Api.Services;
@@ -93,6 +94,64 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
                 userId, $"https://api.spotify.com/v1/playlists/{Uri.EscapeDataString(playlistId)}/items",
                 new { uris = chunk.Select(id => $"spotify:track:{id}").ToArray() });
         }
+    }
+
+    // Una playlist con sus canciones (hasta maxTracks). Se lee como JSON
+    // suelto porque Spotify devuelve cada entrada en "item" (o en "track" en
+    // las respuestas antiguas) y puede traer episodios o huecos sin canción.
+    public async Task<SpotifyPlaylistContent?> GetPlaylistAsync(Guid userId, string playlistId, int maxTracks)
+    {
+        var token = await tokenService.GetValidAccessTokenAsync(userId);
+        var id = Uri.EscapeDataString(playlistId);
+
+        using var meta = await GetJsonAsync(token, $"https://api.spotify.com/v1/playlists/{id}?fields=name,description");
+        if (meta is null) return null;
+        var name = meta.RootElement.GetProperty("name").GetString() ?? "Playlist";
+        var description = meta.RootElement.TryGetProperty("description", out var d) ? d.GetString() : null;
+
+        var tracks = new List<SpotifyPlaylistTrack>();
+        for (var offset = 0; tracks.Count < maxTracks; offset += 50)
+        {
+            using var page = await GetJsonAsync(token,
+                $"https://api.spotify.com/v1/playlists/{id}/items?limit=50&offset={offset}&market=ES");
+            if (page is null) break;
+            var entries = page.RootElement.GetProperty("items");
+            foreach (var entry in entries.EnumerateArray())
+            {
+                var track = entry.TryGetProperty("item", out var it) && it.ValueKind == JsonValueKind.Object ? it
+                    : entry.TryGetProperty("track", out var tr) && tr.ValueKind == JsonValueKind.Object ? tr
+                    : (JsonElement?)null;
+                if (track is not JsonElement t) continue;
+                if (t.TryGetProperty("type", out var type) && type.GetString() != "track") continue;
+                if (!t.TryGetProperty("id", out var tid) || tid.ValueKind != JsonValueKind.String) continue;
+
+                string? image = null;
+                if (t.TryGetProperty("album", out var album) && album.TryGetProperty("images", out var images)
+                    && images.GetArrayLength() > 0)
+                {
+                    image = images[0].GetProperty("url").GetString();
+                }
+                tracks.Add(new SpotifyPlaylistTrack(
+                    tid.GetString()!,
+                    t.GetProperty("name").GetString() ?? "",
+                    string.Join(", ", t.GetProperty("artists").EnumerateArray().Select(a => a.GetProperty("name").GetString())),
+                    image));
+                if (tracks.Count >= maxTracks) break;
+            }
+            if (entries.GetArrayLength() < 50) break;
+        }
+
+        return new SpotifyPlaylistContent(name, string.IsNullOrWhiteSpace(description) ? null : description, tracks);
+    }
+
+    private async Task<JsonDocument?> GetJsonAsync(string token, string url)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await http.SendAsync(request);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest) return null;
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     }
 
     // Spotify responde 404 si el id no existe y 400 si ni siquiera tiene
@@ -200,5 +259,9 @@ public record SpotifyFullTrackDto(
     [property: JsonPropertyName("duration_ms")] int? DurationMs);
 
 public record SpotifyImageDto([property: JsonPropertyName("url")] string Url);
+
+public record SpotifyPlaylistTrack(string Id, string Name, string ArtistName, string? ImageUrl);
+
+public record SpotifyPlaylistContent(string Name, string? Description, List<SpotifyPlaylistTrack> Tracks);
 
 public record SpotifyPlaylistDto([property: JsonPropertyName("id")] string Id);

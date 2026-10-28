@@ -22,7 +22,13 @@ public class ListasController(
 {
     private const int GridLimit = 30;
 
-    public record CreateListaRequest(string? Title, string? Mood);
+    // Se puede crear ya con canciones elegidas (su porqué es opcional: es tuya)
+    public record CreateListaRequest(string? Title, string? Mood, List<AddItemRequest>? Items = null);
+
+    // Importar una playlist de Spotify pegando su enlace
+    public record ImportPlaylistRequest(string? PlaylistUrl, string? Title, string? Mood);
+
+    private const int ImportLimit = 100;
 
     // El item se indica igual que en las notas: itemType+spotifyItemId para
     // Spotify, o musicItemId para un grupo local ya existente
@@ -54,6 +60,14 @@ public class ListasController(
             CreatedAt = DateTime.UtcNow,
         };
         await listas.AddAsync(lista);
+
+        var myId = User.GetUserId();
+        foreach (var (requested, i) in (request.Items ?? []).Select((r, i) => (r, i)))
+        {
+            var (item, error) = await ResolveItemAsync(requested, myId);
+            if (error is not null) return error;
+            await listas.AddItemAsync(NewItem(lista.Id, item!.Id, myId, requested.Text, lista.CreatedAt.AddSeconds(i)));
+        }
         await listas.SaveChangesAsync();
 
         var withCurator = await listas.GetByIdAsync(lista.Id);
@@ -130,6 +144,113 @@ public class ListasController(
         }
     }
 
+    // Crea una estantería nueva con las canciones de una playlist de Spotify
+    // (hasta 100). Sus canciones entran sin porqué: se pueden ir contando luego.
+    [HttpPost("import")]
+    public async Task<IActionResult> ImportPlaylist(ImportPlaylistRequest request)
+    {
+        var playlistId = ParsePlaylistId(request.PlaylistUrl);
+        if (playlistId is null)
+        {
+            return BadRequest(new { message = "Pega el enlace de una playlist de Spotify (open.spotify.com/playlist/…)." });
+        }
+
+        var myId = User.GetUserId();
+        SpotifyPlaylistContent? playlist;
+        try
+        {
+            playlist = await spotify.GetPlaylistAsync(myId, playlistId, ImportLimit);
+        }
+        catch (HttpRequestException e) when (e.StatusCode is System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.Unauthorized)
+        {
+            return BadRequest(new { message = "Spotify no nos deja leer esa playlist. Prueba con una tuya o que sea pública." });
+        }
+        if (playlist is null) return NotFound(new { message = "No encontramos esa playlist en Spotify." });
+        if (playlist.Tracks.Count == 0)
+        {
+            return BadRequest(new { message = "Esa playlist no tiene canciones que podamos importar." });
+        }
+
+        var title = string.IsNullOrWhiteSpace(request.Title) ? playlist.Name : request.Title.Trim();
+        var mood = string.IsNullOrWhiteSpace(request.Mood) ? playlist.Description : request.Mood.Trim();
+        var lista = new Lista
+        {
+            Id = Guid.NewGuid(),
+            Title = title.Length > 120 ? title[..120] : title,
+            Mood = mood is { Length: > 200 } ? mood[..200] : mood,
+            CuratorId = myId,
+            CreatedAt = DateTime.UtcNow,
+        };
+        await listas.AddAsync(lista);
+
+        // Los datos ya vienen en la playlist: se crean las fichas sin
+        // preguntar a Spotify canción por canción
+        var seen = new HashSet<string>();
+        foreach (var (track, i) in playlist.Tracks.Select((t, i) => (t, i)))
+        {
+            if (!seen.Add(track.Id)) continue;
+            var musicItem = await items.GetBySpotifyIdAsync(MusicItemType.Track, track.Id);
+            if (musicItem is null)
+            {
+                musicItem = new MusicItem
+                {
+                    Id = Guid.NewGuid(),
+                    Type = MusicItemType.Track,
+                    SpotifyId = track.Id,
+                    Name = track.Name,
+                    ArtistName = track.ArtistName,
+                    ImageUrl = track.ImageUrl,
+                    CreatedAt = DateTime.UtcNow,
+                };
+                await items.AddAsync(musicItem);
+            }
+            await listas.AddItemAsync(NewItem(lista.Id, musicItem.Id, myId, null, lista.CreatedAt.AddSeconds(i)));
+        }
+        await listas.SaveChangesAsync();
+
+        var created = await listas.GetByIdAsync(lista.Id);
+        return Ok(ToDetailResponse(created!, myId));
+    }
+
+    // Acepta https://open.spotify.com/playlist/ID?si=…, con /intl-es/ y spotify:playlist:ID
+    private static string? ParsePlaylistId(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var match = System.Text.RegularExpressions.Regex.Match(raw.Trim(), @"playlist[/:]([A-Za-z0-9]{10,40})");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    // El item se indica como en las notas: itemType + spotifyItemId, o musicItemId
+    private async Task<(MusicItem? Item, IActionResult? Error)> ResolveItemAsync(AddItemRequest request, Guid myId)
+    {
+        if (request.MusicItemId is Guid musicItemId)
+        {
+            var found = await items.GetByIdAsync(musicItemId);
+            return found is null ? (null, NotFound(new { message = "Ese item no existe." })) : (found, null);
+        }
+
+        var itemType = MusicItemResolverService.ParseSpotifyItemType(request.ItemType);
+        if (itemType is null || string.IsNullOrWhiteSpace(request.SpotifyItemId))
+        {
+            return (null, BadRequest(new
+            {
+                message = "Hacen falta itemType (track/album/artist) y spotifyItemId, o musicItemId.",
+            }));
+        }
+        var result = await resolver.FindOrCreateAsync(myId, itemType.Value, request.SpotifyItemId);
+        return result.Error is not null ? (null, NotFound(new { message = result.Error })) : (result.Item, null);
+    }
+
+    private static ListaItem NewItem(Guid listaId, Guid musicItemId, Guid userId, string? text, DateTime createdAt) => new()
+    {
+        Id = Guid.NewGuid(),
+        ListaId = listaId,
+        MusicItemId = musicItemId,
+        AddedByUserId = userId,
+        Text = text?.Trim() ?? "",
+        CreatedAt = createdAt,
+    };
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetDetail(Guid id)
     {
@@ -145,43 +266,17 @@ public class ListasController(
         var lista = await listas.GetByIdAsync(id);
         if (lista is null) return NotFound();
 
-        var text = request.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(text))
+        // En tu propia estantería el porqué es opcional; en la de otra
+        // persona hay que contar por qué la propones
+        var myId = User.GetUserId();
+        if (lista.CuratorId != myId && string.IsNullOrWhiteSpace(request.Text))
         {
             return BadRequest(new { message = "Cuenta por qué encaja aquí esta canción." });
         }
 
-        var myId = User.GetUserId();
-        MusicItem? item;
-        if (request.MusicItemId is Guid musicItemId)
-        {
-            item = await items.GetByIdAsync(musicItemId);
-            if (item is null) return NotFound(new { message = "Ese item no existe." });
-        }
-        else
-        {
-            var itemType = MusicItemResolverService.ParseSpotifyItemType(request.ItemType);
-            if (itemType is null || string.IsNullOrWhiteSpace(request.SpotifyItemId))
-            {
-                return BadRequest(new
-                {
-                    message = "Hacen falta itemType (track/album/artist) y spotifyItemId, o musicItemId.",
-                });
-            }
-            var result = await resolver.FindOrCreateAsync(myId, itemType.Value, request.SpotifyItemId);
-            if (result.Error is not null) return NotFound(new { message = result.Error });
-            item = result.Item!;
-        }
-
-        var listaItem = new ListaItem
-        {
-            Id = Guid.NewGuid(),
-            ListaId = id,
-            MusicItemId = item.Id,
-            AddedByUserId = myId,
-            Text = text,
-            CreatedAt = DateTime.UtcNow,
-        };
+        var (item, error) = await ResolveItemAsync(request, myId);
+        if (error is not null) return error;
+        var listaItem = NewItem(id, item!.Id, myId, request.Text, DateTime.UtcNow);
         await listas.AddItemAsync(listaItem);
         await listas.SaveChangesAsync();
 
