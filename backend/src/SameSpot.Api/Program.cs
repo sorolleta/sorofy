@@ -124,6 +124,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+
+    // Perfiles de ejemplo para la demo pública (solo con SEED_DEMO=true, y una sola vez)
+    if (app.Configuration["SEED_DEMO"] == "true")
+    {
+        try
+        {
+            await ActivatorUtilities.CreateInstance<DemoSeeder>(scope.ServiceProvider).SeedAsync();
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(ex, "Demo: falló la siembra; la API arranca igual");
+        }
+    }
 }
 
 // Las fotos de los grupos locales se guardan en disco (wwwroot/uploads) y

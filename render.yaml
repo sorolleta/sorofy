@@ -26,6 +26,9 @@ services:
         value: https://sorolleta.github.io/sorofy
       - key: SPOTIFY_REDIRECT_URI
         value: https://sorofy-api.onrender.com/api/auth/spotify/callback
+      # Carga una vez los perfiles de ejemplo de la demo (backend/.../Data/DemoSeeder.cs)
+      - key: SEED_DEMO
+        value: "true"
       - key: SPOTIFY_CLIENT_ID
         sync: false
       - key: SPOTIFY_CLIENT_SECRET

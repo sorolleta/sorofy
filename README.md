@@ -6,6 +6,9 @@ favoritas para encontrarte gente con gustos parecidos.
 
 **Demo:** https://sorolleta.github.io/sorofy
 
+La demo trae perfiles de ejemplo (Lucía, Marcos, Ainhoa…) con notas, listas y grupos locales
+inventados, para que la app no esté vacía al entrar.
+
 ## Qué se puede hacer
 
 - **Notas** — escribe por qué te importa una canción o un disco, con enlace para escucharlo.
