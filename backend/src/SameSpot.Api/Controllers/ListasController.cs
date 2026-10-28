@@ -165,7 +165,15 @@ public class ListasController(
         {
             return BadRequest(new { message = "Spotify no nos deja leer esa playlist. Prueba con una tuya o que sea pública." });
         }
-        if (playlist is null) return NotFound(new { message = "No encontramos esa playlist en Spotify." });
+        // Spotify no deja a las apps nuevas leer sus playlists oficiales (Top 50,
+        // Daily Mix, Descubrimiento semanal...): responden como si no existieran
+        if (playlist is null)
+        {
+            return NotFound(new
+            {
+                message = "No pudimos leer esa playlist. Las playlists hechas por Spotify (Top 50, Daily Mix…) no se pueden importar; prueba con una creada por ti o por otra persona.",
+            });
+        }
         if (playlist.Tracks.Count == 0)
         {
             return BadRequest(new { message = "Esa playlist no tiene canciones que podamos importar." });
