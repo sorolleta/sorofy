@@ -220,7 +220,8 @@ public record SpotifyArtistBriefDto(
 
 public record SpotifyNowPlayingDto(
     [property: JsonPropertyName("is_playing")] bool IsPlaying,
-    [property: JsonPropertyName("item")] SpotifyTrackDto? Item);
+    [property: JsonPropertyName("item")] SpotifyFullTrackDto? Item,
+    [property: JsonPropertyName("progress_ms")] int? ProgressMs = null);
 
 public record SpotifySearchDto(
     [property: JsonPropertyName("albums")] SpotifyPage<SpotifyAlbumDto>? Albums,

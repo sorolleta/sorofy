@@ -1,11 +1,53 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, getMe } from "../api";
-import type { FeedEntry, FeedItem, MyProfile, NoteInteractions, Shelf, ShelfItem } from "../types";
+import type {
+  FeedEntry,
+  FeedItem,
+  LiveTrack,
+  MusicItem,
+  MyProfile,
+  NoteAuthor,
+  NoteInteractions,
+  Shelf,
+  ShelfItem,
+} from "../types";
+import LiveNow from "../components/LiveNow";
 import NoteCard from "../components/NoteCard";
 import { loadInteractions } from "../components/NoteInteractionsBar";
 
 const COMPOSER_DRAFT_KEY = "sorofy-composer-draft";
+
+// El diario por días: hoy y ayer en tarjetas, el resto de la semana
+// resumido por disco (cuántas notas y de quién) y lo anterior otra vez en tarjetas
+type Day = "hoy" | "ayer" | "semana" | "antes";
+function dayOf(iso: string): Day {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const t = new Date(iso).getTime();
+  const day = 24 * 60 * 60 * 1000;
+  if (t >= startOfToday.getTime()) return "hoy";
+  if (t >= startOfToday.getTime() - day) return "ayer";
+  if (t >= startOfToday.getTime() - 6 * day) return "semana";
+  return "antes";
+}
+
+interface WeekGroup {
+  item: MusicItem;
+  count: number;
+  authors: NoteAuthor[];
+}
+
+function groupByItem(entries: FeedEntry[]): WeekGroup[] {
+  const groups = new Map<string, WeekGroup>();
+  for (const e of entries) {
+    const g = groups.get(e.note.item.id) ?? { item: e.note.item, count: 0, authors: [] };
+    g.count++;
+    if (!g.authors.some((a) => a.id === e.author.id)) g.authors.push(e.author);
+    groups.set(e.note.item.id, g);
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count);
+}
 
 // La carátula de un estante; los grupos locales no suelen tener imagen
 function ShelfCover({ item }: { item: ShelfItem }) {
@@ -94,10 +136,35 @@ export default function Feed() {
     );
   };
 
-  const nowListening = listening.filter((i) => i.nowPlaying !== null);
-  const hasPanel =
-    nowListening.length > 0 ||
-    Boolean(shelf && (shelf.weekly.length > 0 || shelf.recent.length > 0));
+  const hasPanel = Boolean(shelf && (shelf.weekly.length > 0 || shelf.recent.length > 0));
+
+  // "Anotar" desde lo que suena: abre Notas con la canción ya elegida
+  const noteLive = (t: LiveTrack) =>
+    navigate("/notas", {
+      state: { noteDraft: { itemType: "track", spotifyItemId: t.spotifyId, name: t.track, artistName: t.artist } },
+    });
+
+  const byDay = (d: Day) => entries.filter((e) => dayOf(e.note.createdAt) === d);
+  const cards = (list: FeedEntry[]) => (
+    <ul className="feed-masonry">
+      {list.map((entry) => (
+        <NoteCard
+          key={entry.note.id}
+          note={entry.note}
+          author={entry.author}
+          actions={saveAction(entry)}
+          because={entry.becauseArtist}
+          becauseFollowedGroup={entry.becauseFollowedGroup}
+          becauseLocal={entry.becauseProvince}
+          interactions={interactions.get(entry.note.id)}
+        />
+      ))}
+    </ul>
+  );
+  const today = byDay("hoy");
+  const yesterday = byDay("ayer");
+  const week = groupByItem(byDay("semana"));
+  const older = byDay("antes");
 
   if (!loaded) {
     return (
@@ -110,50 +177,34 @@ export default function Feed() {
 
   return (
     <>
-      <div className="panel" style={{ gap: 12 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+    <div className={`feed-layout feed-v2${hasPanel ? " has-panel" : ""}`}>
+      <div className="feed-main">
+        {error && <p className="error">{error}</p>}
+
+        <LiveNow listening={listening} onNote={noteLive} />
+
+        <div className="composer-pill">
           {me?.avatarUrl ? (
-            <img
-              className="note-avatar"
-              style={{ width: 36, height: 36, fontSize: "0.8rem", flex: "none" }}
-              src={me.avatarUrl}
-              alt=""
-            />
+            <img className="note-avatar" style={{ width: 32, height: 32, flex: "none" }} src={me.avatarUrl} alt="" />
           ) : (
-            <span
-              className="note-avatar avatar-placeholder"
-              style={{ width: 36, height: 36, fontSize: "0.8rem", flex: "none" }}
-            >
+            <span className="note-avatar avatar-placeholder" style={{ width: 32, height: 32, flex: "none" }}>
               {me?.displayName[0]?.toUpperCase() ?? "♪"}
             </span>
           )}
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-            <textarea
-              className="composer-textarea"
-              rows={2}
-              placeholder="¿Qué te ha llegado hoy? Cuéntalo con tus palabras…"
-              value={composerText}
-              onChange={(e) => updateComposerText(e.target.value)}
-            />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <button className="btn btn-quiet btn-sm" onClick={goFinishInNotes}>
-                🎵 Vincular canción o grupo
-              </button>
-              <button
-                className="btn btn-primary btn-sm"
-                disabled={!composerText.trim()}
-                onClick={goFinishInNotes}
-              >
-                Publicar
-              </button>
-            </div>
-          </div>
+          <textarea
+            className="composer-textarea"
+            rows={1}
+            placeholder="¿Qué te ha llegado hoy?"
+            value={composerText}
+            onChange={(e) => updateComposerText(e.target.value)}
+          />
+          <button className="btn btn-quiet btn-sm" onClick={goFinishInNotes} title="Vincular canción o grupo">
+            🎵
+          </button>
+          <button className="btn btn-primary btn-sm" disabled={!composerText.trim()} onClick={goFinishInNotes}>
+            Publicar
+          </button>
         </div>
-      </div>
-
-    <div className={`feed-layout${hasPanel ? " has-panel" : ""}`}>
-      <div className="feed-main">
-        {error && <p className="error">{error}</p>}
 
         {entries.length === 0 ? (
           <div className="empty-state feed-empty">
@@ -167,20 +218,61 @@ export default function Feed() {
             </Link>
           </div>
         ) : (
-          <ul className="feed-masonry">
-            {entries.map((entry) => (
-              <NoteCard
-                key={entry.note.id}
-                note={entry.note}
-                author={entry.author}
-                actions={saveAction(entry)}
-                because={entry.becauseArtist}
-                becauseFollowedGroup={entry.becauseFollowedGroup}
-                becauseLocal={entry.becauseProvince}
-                interactions={interactions.get(entry.note.id)}
-              />
-            ))}
-          </ul>
+          <>
+            {today.length > 0 && (
+              <>
+                <div className="day-sep"><span>HOY</span></div>
+                {cards(today)}
+              </>
+            )}
+            {yesterday.length > 0 && (
+              <>
+                <div className={`day-sep${today.length > 0 ? " is-past" : ""}`}><span>AYER</span></div>
+                {cards(yesterday)}
+              </>
+            )}
+            {week.length > 0 && (
+              <>
+                <div className="day-sep is-past"><span>ESTA SEMANA</span></div>
+                <div className="week-group">
+                  {week.map((g) => (
+                    <Link key={g.item.id} to={`/musica/${g.item.id}`} className="week-row">
+                      {g.item.imageUrl ? (
+                        <img className="week-cover" src={g.item.imageUrl} alt="" />
+                      ) : (
+                        <span className="week-cover cover-placeholder">{g.item.type === "localGroup" ? "🎺" : "♪"}</span>
+                      )}
+                      <span className="week-info">
+                        <strong>{g.item.name}</strong>
+                        <span>
+                          {g.item.artistName ?? g.item.category ?? ""}
+                          {(g.item.artistName ?? g.item.category) && " · "}
+                          {g.count} {g.count === 1 ? "nota" : "notas"}
+                        </span>
+                      </span>
+                      <span className="week-faces">
+                        {g.authors.slice(0, 3).map((a) =>
+                          a.avatarUrl ? (
+                            <img key={a.id} src={a.avatarUrl} alt={a.displayName} title={a.displayName} />
+                          ) : (
+                            <span key={a.id} className="avatar-placeholder" title={a.displayName}>
+                              {a.displayName[0]?.toUpperCase()}
+                            </span>
+                          ),
+                        )}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+            {older.length > 0 && (
+              <>
+                <div className="day-sep is-past"><span>ANTES</span></div>
+                {cards(older)}
+              </>
+            )}
+          </>
         )}
       </div>
 
@@ -226,34 +318,6 @@ export default function Feed() {
             </>
           )}
 
-          {nowListening.length > 0 && (
-            <>
-              <span className="listening-title listening-title-gap">
-                <span className="dot" />
-                Sonando ahora entre tu gente
-              </span>
-              {nowListening.map((item) => (
-                <Link key={item.userId} to={`/gente/${item.userId}`} className="listening-row">
-                  <span className="listening-cover cover-placeholder">
-                    ♪
-                    {item.avatarUrl ? (
-                      <img className="listening-mini-avatar" src={item.avatarUrl} alt="" />
-                    ) : (
-                      <span className="listening-mini-avatar avatar-placeholder">
-                        {item.displayName[0]?.toUpperCase()}
-                      </span>
-                    )}
-                  </span>
-                  <span className="listening-info">
-                    <strong>{item.displayName}</strong>
-                    <span>
-                      {item.nowPlaying!.track} — {item.nowPlaying!.artist}
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </>
-          )}
         </aside>
       )}
     </div>

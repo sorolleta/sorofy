@@ -13,6 +13,7 @@ namespace SameSpot.Api.Controllers;
 public class MeController(
     IUserRepository users,
     ITopItemsRepository tops,
+    INoteRepository notes,
     SpotifyApiService spotify) : ControllerBase
 {
     // Perfil propio con los tops guardados en nuestra BD
@@ -89,6 +90,23 @@ public class MeController(
         return Ok(new { artists = artists.Count, tracks = tracks.Count, fetchedAt });
     }
 
+    // Lo que más escuchas y aún no has anotado (de tus tops guardados: Spotify
+    // no da cuántas veces suena cada canción, así que no hay contador)
+    [HttpGet("unnoted")]
+    public async Task<IActionResult> Unnoted()
+    {
+        var userId = User.GetUserId();
+        var noted = (await notes.GetByUserAsync(userId))
+            .Select(n => n.MusicItem.SpotifyId)
+            .Where(id => id is not null)
+            .ToHashSet();
+        var tracks = await tops.GetTopTracksAsync(userId);
+        return Ok(tracks
+            .Where(t => !noted.Contains(t.SpotifyTrackId))
+            .Take(6)
+            .Select(t => new { t.SpotifyTrackId, t.Name, t.ArtistName, t.ImageUrl, t.AlbumName }));
+    }
+
     // Lo que el usuario está escuchando ahora mismo (en directo, no se guarda)
     [HttpGet("now-playing")]
     public async Task<IActionResult> NowPlaying()
@@ -102,11 +120,16 @@ public class MeController(
             return Ok(new { playing = false });
         }
 
+        var info = FeedService.ToInfo(nowPlaying);
         return Ok(new
         {
             playing = true,
-            track = nowPlaying.Item.Name,
-            artist = string.Join(", ", nowPlaying.Item.Artists.Select(a => a.Name)),
+            track = info.Track,
+            artist = info.Artist,
+            info.SpotifyId,
+            info.ImageUrl,
+            info.ProgressMs,
+            info.DurationMs,
         });
     }
 

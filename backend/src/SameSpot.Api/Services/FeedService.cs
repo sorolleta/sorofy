@@ -138,7 +138,9 @@ public class FeedService(
                 user.Id,
                 user.DisplayName,
                 user.AvatarUrl,
-                await GetNowPlayingSafeAsync(user.Id)));
+                user.SpotifyId.StartsWith("demo-") || user.SpotifyId.StartsWith("guest-")
+                    ? null
+                    : await GetNowPlayingSafeAsync(user.Id)));
         }
 
         // Primero quienes están escuchando algo ahora mismo
@@ -147,6 +149,14 @@ public class FeedService(
 
     // El feed no puede caerse porque falle un solo usuario (token revocado,
     // Spotify caído...): ese usuario aparece como "no está escuchando nada".
+    public static NowPlayingInfo ToInfo(SpotifyNowPlayingDto nowPlaying) => new(
+        nowPlaying.Item!.Name,
+        string.Join(", ", nowPlaying.Item.Artists.Select(a => a.Name)),
+        nowPlaying.Item.Id,
+        nowPlaying.Item.Album?.Images?.FirstOrDefault()?.Url,
+        nowPlaying.ProgressMs,
+        nowPlaying.Item.DurationMs);
+
     private async Task<NowPlayingInfo?> GetNowPlayingSafeAsync(Guid userId)
     {
         try
@@ -154,9 +164,7 @@ public class FeedService(
             var nowPlaying = await spotify.GetNowPlayingAsync(userId);
             if (nowPlaying?.Item is null || !nowPlaying.IsPlaying) return null;
 
-            return new NowPlayingInfo(
-                nowPlaying.Item.Name,
-                string.Join(", ", nowPlaying.Item.Artists.Select(a => a.Name)));
+            return ToInfo(nowPlaying);
         }
         catch
         {
@@ -176,4 +184,8 @@ public record ShelfData(List<MusicItem> Weekly, List<MusicItem> Recent);
 
 public record FeedItem(Guid UserId, string DisplayName, string? AvatarUrl, NowPlayingInfo? NowPlaying);
 
-public record NowPlayingInfo(string Track, string Artist);
+// Lo que suena ahora, con lo necesario para pintar el "en directo": carátula,
+// progreso y duración (el cliente hace avanzar la barra entre refrescos)
+public record NowPlayingInfo(
+    string Track, string Artist, string? SpotifyId = null, string? ImageUrl = null,
+    int? ProgressMs = null, int? DurationMs = null);

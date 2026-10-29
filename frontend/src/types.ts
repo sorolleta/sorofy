@@ -52,17 +52,35 @@ export interface UserProfile {
   topTracks: TopTrack[];
 }
 
-export interface NowPlaying {
+// Lo que suena ahora en el Spotify de alguien: carátula, progreso y
+// duración para pintar el "en directo" (la barra avanza en el cliente)
+export interface LiveTrack {
+  track: string;
+  artist: string;
+  spotifyId: string | null;
+  imageUrl: string | null;
+  progressMs: number | null;
+  durationMs: number | null;
+}
+
+export interface NowPlaying extends Partial<LiveTrack> {
   playing: boolean;
-  track?: string;
-  artist?: string;
 }
 
 export interface FeedItem {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
-  nowPlaying: { track: string; artist: string } | null;
+  nowPlaying: LiveTrack | null;
+}
+
+// "Te ha sonado mucho y aún no has dicho nada": tus tops sin nota tuya
+export interface UnnotedTrack {
+  spotifyTrackId: string;
+  name: string;
+  artistName: string;
+  imageUrl: string | null;
+  albumName: string | null;
 }
 
 export interface NoteAuthor {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { api, getMe } from "../api";
 import type {
@@ -7,10 +7,14 @@ import type {
   Note,
   SearchArtist,
   SearchResponse,
+  NowPlaying,
   Shelf,
   ShelfItem,
   TopTrack,
+  UnnotedTrack,
 } from "../types";
+import { LiveEq } from "../components/LiveNow";
+import { ripple } from "../ripple";
 import NoteList from "../components/NoteList";
 
 // Lo que hace falta para abrir el formulario: un item de Spotify, un grupo
@@ -22,6 +26,8 @@ interface Draft {
   musicItemId?: string;
   name: string;
   artistName?: string | null;
+  // La carátula, para la cabecera del formulario ("Tu nota sobre…")
+  imageUrl?: string | null;
 }
 
 type Tab = "buscar" | "crear" | "bitacora";
@@ -36,13 +42,19 @@ const isListenUrlValid = (url: string) =>
     url.replace(/^https?:\/\/(www\.|m\.|on\.)?/, ""),
   );
 
-// Fila del buscador: carátula, nombre y el botón que abre el formulario
+// De dónde sale la carátula al pulsar "Anotar": el formulario la hace volar
+// desde ahí hasta su cabecera. Lo escribe la fila pulsada y lo lee el
+// efecto que abre el formulario (siempre en el mismo clic).
+let pickOrigin: { rect: DOMRect; imageUrl: string | null } | null = null;
+
+// Fila del buscador: carátula, nombre y "Anotar" (toda la fila abre el formulario)
 function ResultRow({
   imageUrl,
   round,
   fallback,
   name,
   sub,
+  live,
   onPick,
 }: {
   imageUrl: string | null;
@@ -50,11 +62,18 @@ function ResultRow({
   fallback?: string;
   name: string;
   sub?: string | null;
+  // "Tú la estás escuchando": coincide con lo que suena en tu Spotify
+  live?: boolean;
   onPick: () => void;
 }) {
   const coverClass = `result-cover${round ? " is-round" : ""}`;
+  const pick = (e: React.MouseEvent<HTMLElement>) => {
+    const cover = e.currentTarget.closest(".res-row")?.querySelector(".result-cover");
+    pickOrigin = cover ? { rect: cover.getBoundingClientRect(), imageUrl } : null;
+    onPick();
+  };
   return (
-    <div className="result-row">
+    <div className="res-row" onClick={pick}>
       {imageUrl ? (
         <img className={coverClass} src={imageUrl} alt="" />
       ) : (
@@ -62,10 +81,25 @@ function ResultRow({
       )}
       <div className="result-name">
         {name}
-        {sub && <small>{sub}</small>}
+        {live ? (
+          <small className="res-live">
+            <LiveEq small />
+            Tú la estás escuchando
+          </small>
+        ) : (
+          sub && <small>{sub}</small>
+        )}
       </div>
-      <button className="btn btn-quiet btn-sm" onClick={onPick}>
-        Nota
+      <button
+        className="btn btn-quiet btn-sm"
+        data-note-track
+        onClick={(e) => {
+          e.stopPropagation();
+          ripple(e);
+          pick(e);
+        }}
+      >
+        Anotar
       </button>
     </div>
   );
@@ -187,6 +221,15 @@ export default function Notes() {
     if (query.trim().length >= 2) runSearch(query.trim());
   };
 
+  // Cabecera v2: lo que suena ahora en tu Spotify y lo que más escuchas sin anotar
+  const [myNow, setMyNow] = useState<NowPlaying | null>(null);
+  const [unnoted, setUnnoted] = useState<UnnotedTrack[]>([]);
+  useEffect(() => {
+    api.get<NowPlaying>("/api/me/now-playing").then(setMyNow).catch(() => {});
+    api.get<UnnotedTrack[]>("/api/me/unnoted").then(setUnnoted).catch(() => {});
+  }, []);
+  const myNowId = myNow?.playing ? myNow.spotifyId ?? null : null;
+
   // Ejemplos antes de escribir: tus canciones de Spotify y lo que anota la gente
   const [myTopTracks, setMyTopTracks] = useState<TopTrack[]>([]);
   const [communityItems, setCommunityItems] = useState<ShelfItem[]>([]);
@@ -203,9 +246,14 @@ export default function Notes() {
       .catch(() => {});
   }, []);
 
+  const formRef = useRef<HTMLElement>(null);
+  const formArtRef = useRef<HTMLElement>(null);
+  const [flyTick, setFlyTick] = useState(0);
+
   const openDraft = (draft: Draft) => {
     setTab("buscar");
-    setDraft(draft);
+    setDraft({ ...draft, imageUrl: draft.imageUrl ?? pickOrigin?.imageUrl ?? null });
+    setFlyTick((t) => t + 1);
     setText(pendingComposerText);
     setPendingComposerText("");
     setVibeColor(null);
@@ -216,14 +264,65 @@ export default function Notes() {
     setAnchorQuery("");
     setAnchorOptions([]);
     setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Al abrir el formulario: se lleva a la vista y la carátula vuela desde la
+  // fila pulsada hasta su cabecera (como en el prototipo); luego, foco al texto
+  useLayoutEffect(() => {
+    const form = formRef.current;
+    if (!flyTick || !form) return;
+    const origin = pickOrigin;
+    pickOrigin = null;
+    window.scrollTo({ top: form.getBoundingClientRect().top + window.scrollY - 90 });
+    const art = formArtRef.current;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (origin && art && origin.rect.width > 0 && !reduced) {
+      const dst = art.getBoundingClientRect();
+      const fly = document.createElement("div");
+      fly.className = "note-fly";
+      Object.assign(fly.style, {
+        left: `${origin.rect.left}px`,
+        top: `${origin.rect.top}px`,
+        width: `${origin.rect.width}px`,
+        height: `${origin.rect.height}px`,
+        transformOrigin: "0 0",
+        backgroundImage: origin.imageUrl ? `url("${origin.imageUrl}")` : "linear-gradient(135deg,#7b6cff,#3a3466)",
+      });
+      document.body.appendChild(fly);
+      art.style.opacity = "0";
+      const dx = dst.left - origin.rect.left;
+      const dy = dst.top - origin.rect.top;
+      const sx = dst.width / origin.rect.width;
+      const sy = dst.height / origin.rect.height;
+      fly.animate(
+        [
+          { transform: "translate(0,0) scale(1)" },
+          { transform: `translate(${dx * 0.5}px,${dy * 0.5 - 60}px) scale(${1 + (sx - 1) * 0.5},${1 + (sy - 1) * 0.5})`, offset: 0.55 },
+          { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})` },
+        ],
+        { duration: 620, easing: "cubic-bezier(.5,0,.2,1)", fill: "forwards" },
+      ).onfinish = () => {
+        art.style.opacity = "";
+        fly.remove();
+        art.animate([{ transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" });
+      };
+    }
+    form.animate(
+      [{ boxShadow: "0 0 0 0 rgba(123,108,255,0.7)" }, { boxShadow: "0 0 0 14px rgba(123,108,255,0)" }],
+      { duration: 900, delay: 450 },
+    );
+    const textarea = form.querySelector("textarea");
+    const timer = setTimeout(() => textarea?.focus({ preventScroll: true }), 450);
+    return () => clearTimeout(timer);
+  }, [flyTick]);
+
   const openEdit = (note: Note) => {
+    pickOrigin = null;
     openDraft({
       noteId: note.id,
       name: note.item.name,
       artistName: note.item.artistName,
+      imageUrl: note.item.imageUrl,
     });
     setText(note.text ?? "");
     // El color y emoji viejos viajan de vuelta tal cual: no hay UI para
@@ -344,16 +443,110 @@ export default function Notes() {
 
   return (
     <>
-      <div className="page-head">
-        <h1 className="section-title">Notas</h1>
+      <header className="notas-hero">
+        <span className="notas-kicker">NOTAS</span>
+        <h2 className="notas-h">¿Qué te ha tocado hoy?</h2>
         <p className="section-sub">
-          Busca lo que te ha tocado hoy, crea un perfil que falte, o repasa lo
-          que ya has escrito.
+          Busca una canción, un disco o el grupo de tu pueblo y cuenta qué te pasó con él.
         </p>
+        <form
+          className="notas-search"
+          onSubmit={(e) => {
+            setTab("buscar");
+            search(e);
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Canción, álbum, artista o grupo de tu pueblo…"
+            aria-label="Buscar música"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setTab("buscar");
+            }}
+          />
+          <button className="btn btn-primary btn-sm" type="submit">
+            Buscar
+          </button>
+        </form>
+        {myNow?.playing && myNow.spotifyId && (
+          <div className="me-now">
+            {myNow.imageUrl ? (
+              <img className="me-now-art" src={myNow.imageUrl} alt="" />
+            ) : (
+              <span className="me-now-art cover-placeholder">♪</span>
+            )}
+            <div className="me-now-txt">
+              <small>TÚ ESTÁS ESCUCHANDO</small>
+              <span>
+                {myNow.track} — {myNow.artist}
+              </span>
+            </div>
+            <button
+              className="btn btn-ghost btn-sm"
+              data-note-track
+              onClick={(e) => {
+                ripple(e);
+                const art = e.currentTarget.closest(".me-now")?.querySelector(".me-now-art");
+                pickOrigin = art ? { rect: art.getBoundingClientRect(), imageUrl: myNow.imageUrl ?? null } : null;
+                openDraft({
+                  itemType: "track",
+                  spotifyItemId: myNow.spotifyId!,
+                  name: myNow.track ?? "",
+                  artistName: myNow.artist,
+                });
+              }}
+            >
+              Anotar esta
+            </button>
+          </div>
+        )}
         {pendingComposerText && !draft && (
           <p className="section-sub accent">Tu nota del feed está lista — busca de qué habla.</p>
         )}
-      </div>
+      </header>
+
+      {unnoted.length > 0 && (
+        <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="live-head">
+            <h3>Te ha sonado mucho y aún no has dicho nada</h3>
+            <span className="live-count">de lo que más escuchas</span>
+          </div>
+          <div className="live-rail">
+            {unnoted.map((t, i) => (
+              <article key={t.spotifyTrackId} className="live-card">
+                {t.imageUrl ? (
+                  <img className="live-cover" src={t.imageUrl} alt="" />
+                ) : (
+                  <span className="live-cover cover-placeholder">♪</span>
+                )}
+                <div className="live-track">
+                  <strong>{t.name}</strong>
+                  <span>{t.artistName}</span>
+                </div>
+                {t.albumName && <span className="pend-hint">del disco {t.albumName}</span>}
+                <button
+                  className={`btn ${i === 0 ? "btn-primary" : "btn-quiet"} btn-sm`}
+                  data-note-track
+                  onClick={(e) => {
+                    ripple(e);
+                    const cover = e.currentTarget.closest(".live-card")?.querySelector(".live-cover");
+                    pickOrigin = cover ? { rect: cover.getBoundingClientRect(), imageUrl: t.imageUrl } : null;
+                    openDraft({ itemType: "track", spotifyItemId: t.spotifyTrackId, name: t.name, artistName: t.artistName });
+                  }}
+                >
+                  Anotar
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="tab-bar" role="tablist">
         {tabButton("buscar", "Buscar y anotar")}
@@ -363,13 +556,170 @@ export default function Notes() {
 
       {tab === "buscar" && (
         <div className="tab-panel is-active">
+          <div className="notas-grid">
+          <section className="panel search-panel">
+            <h3 className="section-title" style={{ fontSize: "1.05rem" }}>
+              {results ? `Resultados para «${query.trim()}»` : "Para empezar"}
+            </h3>
+            {searching && (
+              <div className="loading-state">
+                <span className="spinner" />
+                Buscando…
+              </div>
+            )}
+            {!draft && error && <p className="field-error">{error}</p>}
+
+            {!results && !searching && query.trim().length < 2 && (
+              <>
+                {myTopTracks.length > 0 && (
+                  <>
+                    <div className="search-cat">De lo que más escuchas</div>
+                    {myTopTracks.map((track) => (
+                      <ResultRow
+                        key={track.spotifyTrackId}
+                        imageUrl={track.imageUrl}
+                        name={track.name}
+                        sub={track.artistName}
+                        onPick={() =>
+                          openDraft({
+                            itemType: "track",
+                            spotifyItemId: track.spotifyTrackId,
+                            name: track.name,
+                            artistName: track.artistName,
+                          })
+                        }
+                      />
+                    ))}
+                  </>
+                )}
+                {communityItems.length > 0 && (
+                  <>
+                    <div className="search-cat">Lo que está anotando la gente</div>
+                    {communityItems.map((item) => (
+                      <ResultRow
+                        key={item.id}
+                        imageUrl={item.imageUrl}
+                        fallback={item.type === "localGroup" ? "🎪" : undefined}
+                        round={item.type === "artist"}
+                        name={item.name}
+                        sub={
+                          item.artistName ??
+                          (item.type === "localGroup" ? item.category ?? "grupo local" : item.type === "artist" ? "artista" : "")
+                        }
+                        onPick={() => openDraft({ musicItemId: item.id, name: item.name, artistName: item.artistName })}
+                      />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+
+            {results && (
+              <>
+                <div className="search-cat">Canciones</div>
+                {results.tracks.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {results.tracks.map((track) => (
+                  <ResultRow
+                    key={track.id}
+                    imageUrl={track.imageUrl}
+                    name={track.name}
+                    sub={track.artistName}
+                    live={track.id === myNowId}
+                    onPick={() =>
+                      openDraft({
+                        itemType: "track",
+                        spotifyItemId: track.id,
+                        name: track.name,
+                        artistName: track.artistName,
+                      })
+                    }
+                  />
+                ))}
+
+                <div className="search-cat">Álbumes</div>
+                {results.albums.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {results.albums.map((album) => (
+                  <ResultRow
+                    key={album.id}
+                    imageUrl={album.imageUrl}
+                    name={album.name}
+                    sub={album.artistName}
+                    onPick={() =>
+                      openDraft({
+                        itemType: "album",
+                        spotifyItemId: album.id,
+                        name: album.name,
+                        artistName: album.artistName,
+                      })
+                    }
+                  />
+                ))}
+
+                <div className="search-cat">Artistas</div>
+                {results.artists.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {results.artists.map((artist) => (
+                  <ResultRow
+                    key={artist.id}
+                    imageUrl={artist.imageUrl}
+                    round
+                    name={artist.name}
+                    sub="artista"
+                    onPick={() =>
+                      openDraft({
+                        itemType: "artist",
+                        spotifyItemId: artist.id,
+                        name: artist.name,
+                      })
+                    }
+                  />
+                ))}
+
+                <div className="search-cat">Grupos locales</div>
+                {localGroups.length === 0 && <p className="section-sub">Sin resultados.</p>}
+                {localGroups.map((group) => (
+                  <ResultRow
+                    key={group.id}
+                    imageUrl={group.imageUrl ?? null}
+                    fallback="🎪"
+                    name={group.name}
+                    sub={group.description}
+                    onPick={() => openDraft({ musicItemId: group.id, name: group.name })}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Si el grupo no existe en Spotify ni aquí, lo creas tú */}
+            <div className="new-group-cta">
+              <span className="section-sub">
+                ¿No encuentras al grupo de tu pueblo, tu peña o tu proyecto?
+              </span>
+              <button
+                className="btn btn-quiet btn-sm"
+                onClick={() => {
+                  if (!newGroupName && query.trim()) setNewGroupName(query.trim());
+                  setTab("crear");
+                }}
+              >
+                Crear perfil
+              </button>
+            </div>
+          </section>
           {draft && (
-            <section className="panel">
-              <div className="form-head">
-                <h2 className="section-title form-title">
-                  {draft.noteId ? "Editar tu nota sobre" : "Tu nota sobre"} <em>{draft.name}</em>
-                </h2>
-                {draft.artistName && <span className="note-track-date">{draft.artistName}</span>}
+            <section className="panel" ref={formRef as React.RefObject<HTMLElement>}>
+              <div className="form-subject">
+                {draft.imageUrl ? (
+                  <img ref={formArtRef as React.RefObject<HTMLImageElement>} className="form-subject-art" src={draft.imageUrl} alt="" />
+                ) : (
+                  <span ref={formArtRef as React.RefObject<HTMLSpanElement>} className="form-subject-art cover-placeholder">
+                    {draft.itemType ? "♪" : "🎪"}
+                  </span>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                  <span className="form-subject-k">{draft.noteId ? "EDITAS TU NOTA SOBRE" : "TU NOTA SOBRE"}</span>
+                  <span className="form-subject-t">{draft.name}</span>
+                  {draft.artistName && <span className="form-subject-s">{draft.artistName}</span>}
+                </div>
               </div>
 
               <div className={`field${textTooShort ? " has-error" : ""}`}>
@@ -481,159 +831,7 @@ export default function Notes() {
             </section>
           )}
 
-          <section className="panel search-panel">
-            <form className="field" onSubmit={search}>
-              <input
-                type="search"
-                placeholder="Canción, álbum, artista o grupo de tu pueblo…"
-                aria-label="Buscar música"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </form>
-            {searching && (
-              <div className="loading-state">
-                <span className="spinner" />
-                Buscando…
-              </div>
-            )}
-            {!draft && error && <p className="field-error">{error}</p>}
-
-            {!results && !searching && query.trim().length < 2 && (
-              <>
-                {myTopTracks.length > 0 && (
-                  <>
-                    <div className="search-cat">De lo que más escuchas</div>
-                    {myTopTracks.map((track) => (
-                      <ResultRow
-                        key={track.spotifyTrackId}
-                        imageUrl={track.imageUrl}
-                        name={track.name}
-                        sub={track.artistName}
-                        onPick={() =>
-                          openDraft({
-                            itemType: "track",
-                            spotifyItemId: track.spotifyTrackId,
-                            name: track.name,
-                            artistName: track.artistName,
-                          })
-                        }
-                      />
-                    ))}
-                  </>
-                )}
-                {communityItems.length > 0 && (
-                  <>
-                    <div className="search-cat">Lo que está anotando la gente</div>
-                    {communityItems.map((item) => (
-                      <ResultRow
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        fallback={item.type === "localGroup" ? "🎪" : undefined}
-                        round={item.type === "artist"}
-                        name={item.name}
-                        sub={
-                          item.artistName ??
-                          (item.type === "localGroup" ? item.category ?? "grupo local" : item.type === "artist" ? "artista" : "")
-                        }
-                        onPick={() => openDraft({ musicItemId: item.id, name: item.name, artistName: item.artistName })}
-                      />
-                    ))}
-                  </>
-                )}
-              </>
-            )}
-
-            {results && (
-              <>
-                <div className="search-cat">Canciones</div>
-                {results.tracks.length === 0 && <p className="section-sub">Sin resultados.</p>}
-                {results.tracks.map((track) => (
-                  <ResultRow
-                    key={track.id}
-                    imageUrl={track.imageUrl}
-                    name={track.name}
-                    sub={track.artistName}
-                    onPick={() =>
-                      openDraft({
-                        itemType: "track",
-                        spotifyItemId: track.id,
-                        name: track.name,
-                        artistName: track.artistName,
-                      })
-                    }
-                  />
-                ))}
-
-                <div className="search-cat">Álbumes</div>
-                {results.albums.length === 0 && <p className="section-sub">Sin resultados.</p>}
-                {results.albums.map((album) => (
-                  <ResultRow
-                    key={album.id}
-                    imageUrl={album.imageUrl}
-                    name={album.name}
-                    sub={album.artistName}
-                    onPick={() =>
-                      openDraft({
-                        itemType: "album",
-                        spotifyItemId: album.id,
-                        name: album.name,
-                        artistName: album.artistName,
-                      })
-                    }
-                  />
-                ))}
-
-                <div className="search-cat">Artistas</div>
-                {results.artists.length === 0 && <p className="section-sub">Sin resultados.</p>}
-                {results.artists.map((artist) => (
-                  <ResultRow
-                    key={artist.id}
-                    imageUrl={artist.imageUrl}
-                    round
-                    name={artist.name}
-                    sub="artista"
-                    onPick={() =>
-                      openDraft({
-                        itemType: "artist",
-                        spotifyItemId: artist.id,
-                        name: artist.name,
-                      })
-                    }
-                  />
-                ))}
-
-                <div className="search-cat">Grupos locales</div>
-                {localGroups.length === 0 && <p className="section-sub">Sin resultados.</p>}
-                {localGroups.map((group) => (
-                  <ResultRow
-                    key={group.id}
-                    imageUrl={group.imageUrl ?? null}
-                    fallback="🎪"
-                    name={group.name}
-                    sub={group.description}
-                    onPick={() => openDraft({ musicItemId: group.id, name: group.name })}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Si el grupo no existe en Spotify ni aquí, lo creas tú */}
-            <div className="new-group-cta">
-              <span className="section-sub">
-                ¿No encuentras al grupo de tu pueblo, tu peña o tu proyecto?
-              </span>
-              <button
-                className="btn btn-quiet btn-sm"
-                onClick={() => {
-                  if (!newGroupName && query.trim()) setNewGroupName(query.trim());
-                  setTab("crear");
-                }}
-              >
-                Crear perfil
-              </button>
-            </div>
-          </section>
+          </div>
         </div>
       )}
 

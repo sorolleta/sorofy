@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Link, NavLink, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { api, getToken, clearToken, getMe, loginUrl, loginAsGuest, needsOnboarding, setNeedsOnboarding } from "./api";
 import type { MyProfile } from "./types";
 import AuthCallback from "./pages/AuthCallback";
@@ -84,8 +84,10 @@ function Login() {
   );
 }
 
-function Layout({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
+function Layout({ children, wide, className }: { children: React.ReactNode; wide?: boolean; className?: string }) {
   const navigate = useNavigate();
+  // Cambiar de ruta vuelve a montar <main>: así cada pantalla entra con su transición
+  const { pathname } = useLocation();
   const [me, setMe] = useState<MyProfile | null>(null);
   const [hasUnreadEcos, setHasUnreadEcos] = useState(false);
 
@@ -157,7 +159,9 @@ function Layout({ children, wide }: { children: React.ReactNode; wide?: boolean 
           </Link>
         </div>
       </nav>
-      <main className={wide ? "app-col feed-wide" : "app-col"}>{children}</main>
+      <main key={pathname} className={`app-col page-in${wide ? " feed-wide" : ""}${className ? ` ${className}` : ""}`}>
+        {children}
+      </main>
     </>
   );
 }
@@ -173,7 +177,7 @@ export default function App() {
         <Route path="/gente" element={<Layout><People /></Layout>} />
         <Route path="/gente/:id" element={<Layout><UserDetail /></Layout>} />
         <Route path="/feed" element={<Layout wide><Feed /></Layout>} />
-        <Route path="/notas" element={<Layout><Notes /></Layout>} />
+        <Route path="/notas" element={<Layout className="notas-wide"><Notes /></Layout>} />
         <Route path="/musica/:id" element={<Layout><MusicItemDetail /></Layout>} />
         <Route path="/nota/:id" element={<Layout wide><NoteDetail /></Layout>} />
         {/* La ruta vieja de reseñas lleva a las notas, su sucesora */}

@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { UserSummary } from "../types";
+import type { FeedItem, UserSummary } from "../types";
+import { LiveEq } from "../components/LiveNow";
 
 export default function People() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Quién de la gente que sigues está escuchando algo ahora (anillo lavanda)
+  const [live, setLive] = useState<Map<string, FeedItem>>(new Map());
+
+  useEffect(() => {
+    api
+      .get<FeedItem[]>("/api/feed/now-playing")
+      .then((list) => setLive(new Map(list.filter((i) => i.nowPlaying).map((i) => [i.userId, i]))))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.get<UserSummary[]>("/api/users").then((u) => {
@@ -43,22 +53,30 @@ export default function People() {
         <h1 className="section-title">Gente</h1>
         <p className="section-sub">
           Personas que escuchan como tú. Sin números públicos: solo sus notas
-          hablan por ellas.
+          hablan por ellas. El anillo lavanda indica quién está escuchando ahora.
         </p>
       </div>
       <div className="panel people-panel">
         {users.map((user) => (
           <div key={user.id} className="person-row">
             {user.avatarUrl ? (
-              <img className="person-avatar" src={user.avatarUrl} alt="" />
+              <img className={`person-avatar${live.has(user.id) ? " is-live" : ""}`} src={user.avatarUrl} alt="" />
             ) : (
-              <span className="person-avatar avatar-placeholder">
+              <span className={`person-avatar avatar-placeholder${live.has(user.id) ? " is-live" : ""}`}>
                 {user.displayName[0]?.toUpperCase() ?? "♪"}
               </span>
             )}
             <Link to={`/gente/${user.id}`} className="person-name">
               {user.displayName}
               {user.province && <small>De {user.province}</small>}
+              {live.get(user.id)?.nowPlaying && (
+                <small className="live-line">
+                  <LiveEq small />
+                  <span>
+                    {live.get(user.id)!.nowPlaying!.track} — {live.get(user.id)!.nowPlaying!.artist}
+                  </span>
+                </small>
+              )}
             </Link>
             <button
               className={`btn btn-ghost btn-sm btn-follow${user.isFollowedByMe ? " is-following" : ""}`}
