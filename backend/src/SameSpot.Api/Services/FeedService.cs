@@ -127,6 +127,11 @@ public class FeedService(
         return new ShelfData(weekly, recent);
     }
 
+    // Lo que suena en tu círculo. Se cachea unos segundos por usuario: el
+    // feed, Gente y cada pestaña abierta preguntan a la vez y Spotify limita
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, (DateTime At, NowPlayingInfo? Now, LastPlayedInfo? Last)> LiveCache = new();
+    private static readonly TimeSpan LiveTtl = TimeSpan.FromSeconds(12);
+
     public async Task<List<FeedItem>> GetNowPlayingFeedAsync(Guid userId)
     {
         var following = await follows.GetFollowingUsersAsync(userId);
@@ -134,17 +139,54 @@ public class FeedService(
 
         foreach (var user in following)
         {
-            feed.Add(new FeedItem(
-                user.Id,
-                user.DisplayName,
-                user.AvatarUrl,
-                user.SpotifyId.StartsWith("demo-") || user.SpotifyId.StartsWith("guest-")
-                    ? null
-                    : await GetNowPlayingSafeAsync(user.Id)));
+            // Perfiles de ejemplo e invitados no tienen Spotify: ni se pregunta
+            var hasSpotify = !user.SpotifyId.StartsWith("demo-") && !user.SpotifyId.StartsWith("guest-");
+            var (now, last) = hasSpotify ? await GetLiveStateAsync(user.Id) : (null, null);
+            feed.Add(new FeedItem(user.Id, user.DisplayName, user.AvatarUrl, now, last));
         }
 
-        // Primero quienes están escuchando algo ahora mismo
-        return feed.OrderByDescending(i => i.NowPlaying is not null).ToList();
+        // Primero quienes escuchan ahora; detrás, quien sonó hace menos
+        return feed
+            .OrderByDescending(i => i.NowPlaying is not null)
+            .ThenByDescending(i => i.LastPlayed?.PlayedAt)
+            .ToList();
+    }
+
+    private async Task<(NowPlayingInfo?, LastPlayedInfo?)> GetLiveStateAsync(Guid userId)
+    {
+        if (LiveCache.TryGetValue(userId, out var cached) && DateTime.UtcNow - cached.At < LiveTtl)
+        {
+            // El progreso sigue corriendo mientras dura la caché
+            var now = cached.Now is { ProgressMs: not null } n
+                ? n with { ProgressMs = n.ProgressMs + (int)(DateTime.UtcNow - cached.At).TotalMilliseconds }
+                : cached.Now;
+            return (now, cached.Last);
+        }
+
+        var nowPlaying = await GetNowPlayingSafeAsync(userId);
+        var lastPlayed = nowPlaying is null ? await GetLastPlayedSafeAsync(userId) : null;
+        LiveCache[userId] = (DateTime.UtcNow, nowPlaying, lastPlayed);
+        return (nowPlaying, lastPlayed);
+    }
+
+    private async Task<LastPlayedInfo?> GetLastPlayedSafeAsync(Guid userId)
+    {
+        try
+        {
+            var recent = await spotify.GetLastPlayedAsync(userId);
+            var item = recent?.Items.FirstOrDefault();
+            if (item is null) return null;
+            return new LastPlayedInfo(
+                item.Track.Name,
+                string.Join(", ", item.Track.Artists.Select(a => a.Name)),
+                item.Track.Album?.Images?.FirstOrDefault()?.Url,
+                item.PlayedAt);
+        }
+        catch
+        {
+            // Sesiones de antes de pedir este permiso: simplemente no se muestra
+            return null;
+        }
     }
 
     // El feed no puede caerse porque falle un solo usuario (token revocado,
@@ -182,7 +224,11 @@ public record FeedNote(Note Note, string? BecauseArtist, string? BecauseFollowed
 // y lo último anotado por cualquiera
 public record ShelfData(List<MusicItem> Weekly, List<MusicItem> Recent);
 
-public record FeedItem(Guid UserId, string DisplayName, string? AvatarUrl, NowPlayingInfo? NowPlaying);
+public record FeedItem(
+    Guid UserId, string DisplayName, string? AvatarUrl, NowPlayingInfo? NowPlaying, LastPlayedInfo? LastPlayed = null);
+
+// Lo último que sonó en el Spotify de alguien que ahora no escucha nada ("hace 2 h")
+public record LastPlayedInfo(string Track, string Artist, string? ImageUrl, DateTime PlayedAt);
 
 // Lo que suena ahora, con lo necesario para pintar el "en directo": carátula,
 // progreso y duración (el cliente hace avanzar la barra entre refrescos)

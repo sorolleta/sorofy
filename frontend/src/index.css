@@ -1114,3 +1114,8 @@ a.live-who, a.week-row, a.live-ava { color: inherit; }
 .notas-hero .section-sub { max-width: 460px; }
 /* La bitácora y "crear perfil" siguen usando el ancho normal dentro de Notas v2 */
 .notas-grid > .panel { min-width: 0; }
+
+/* Feed v2: el panel derecho se queda fijo al bajar (≥1000px) */
+@media (min-width: 1000px) { .feed-layout.feed-v2 > .listening-panel { position: sticky; top: 116px; } }
+/* Área táctil de 44px en pantallas táctiles (checklist del handoff) */
+@media (pointer: coarse) { .btn-sm, .btn-heart, .btn-comment, .btn-listen { min-height: 44px; } }

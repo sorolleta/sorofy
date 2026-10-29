@@ -12,7 +12,8 @@ public class SpotifyAuthService(HttpClient http, IOptions<SpotifyOptions> option
     // playlist-modify-private: para la playlist "Mis Descubrimientos" y
     // guardar estanterías; playlist-read-*: para importar tus playlists
     private const string Scopes = "user-read-private user-top-read user-read-currently-playing " +
-                                  "playlist-modify-private playlist-read-private playlist-read-collaborative";
+                                  "playlist-modify-private playlist-read-private playlist-read-collaborative " +
+                                  "user-read-recently-played";
     private readonly SpotifyOptions _options = options.Value;
 
     public string BuildAuthorizeUrl(string state)

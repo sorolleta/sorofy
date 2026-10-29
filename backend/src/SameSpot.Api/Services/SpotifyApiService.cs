@@ -33,6 +33,13 @@ public class SpotifyApiService(HttpClient http, SpotifyTokenService tokenService
             userId, "https://api.spotify.com/v1/me/player/currently-playing");
     }
 
+    // La última canción que sonó (para quien no está escuchando nada ahora)
+    public async Task<SpotifyRecentlyPlayedDto?> GetLastPlayedAsync(Guid userId)
+    {
+        return await GetAsync<SpotifyRecentlyPlayedDto>(
+            userId, "https://api.spotify.com/v1/me/player/recently-played?limit=1");
+    }
+
     // Búsqueda de álbumes, canciones y artistas para escribir notas sobre ellos
     public async Task<SpotifySearchDto?> SearchAsync(Guid userId, string query)
     {
@@ -260,6 +267,13 @@ public record SpotifyFullTrackDto(
     [property: JsonPropertyName("duration_ms")] int? DurationMs);
 
 public record SpotifyImageDto([property: JsonPropertyName("url")] string Url);
+
+public record SpotifyRecentlyPlayedDto(
+    [property: JsonPropertyName("items")] List<SpotifyPlayHistoryDto> Items);
+
+public record SpotifyPlayHistoryDto(
+    [property: JsonPropertyName("track")] SpotifyFullTrackDto Track,
+    [property: JsonPropertyName("played_at")] DateTime PlayedAt);
 
 public record SpotifyPlaylistTrack(string Id, string Name, string ArtistName, string? ImageUrl);
 

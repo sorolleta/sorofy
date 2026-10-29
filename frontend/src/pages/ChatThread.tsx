@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import type { HubConnection } from "@microsoft/signalr";
 import { api, getMyUserId } from "../api";
 import { createChatConnection } from "../chat";
@@ -12,7 +12,9 @@ export default function ChatThread() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   // Las demás conversaciones, para saltar entre ellas sin volver atrás
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [text, setText] = useState("");
+  // "Escuchar con…" desde el directo del feed trae el mensaje ya escrito
+  const location = useLocation();
+  const [text, setText] = useState(() => (location.state as { prefill?: string } | null)?.prefill ?? "");
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
   const connectionRef = useRef<HubConnection | null>(null);

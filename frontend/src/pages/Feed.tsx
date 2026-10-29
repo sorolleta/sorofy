@@ -18,35 +18,37 @@ import { loadInteractions } from "../components/NoteInteractionsBar";
 
 const COMPOSER_DRAFT_KEY = "sorofy-composer-draft";
 
-// El diario por días: hoy y ayer en tarjetas, el resto de la semana
-// resumido por disco (cuántas notas y de quién) y lo anterior otra vez en tarjetas
-type Day = "hoy" | "ayer" | "semana" | "antes";
+// El diario por días: lo de las últimas 24 h en tarjetas (cronológico),
+// la semana resumida por obra (cuántas notas y de quién) y lo anterior en tarjetas
+type Day = "hoy" | "semana" | "antes";
+const DAY_MS = 24 * 60 * 60 * 1000;
 function dayOf(iso: string): Day {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const t = new Date(iso).getTime();
-  const day = 24 * 60 * 60 * 1000;
-  if (t >= startOfToday.getTime()) return "hoy";
-  if (t >= startOfToday.getTime() - day) return "ayer";
-  if (t >= startOfToday.getTime() - 6 * day) return "semana";
+  const age = Date.now() - new Date(iso).getTime();
+  if (age < DAY_MS) return "hoy";
+  if (age < 7 * DAY_MS) return "semana";
   return "antes";
 }
+const newestFirst = (a: FeedEntry, b: FeedEntry) =>
+  new Date(b.note.createdAt).getTime() - new Date(a.note.createdAt).getTime();
 
 interface WeekGroup {
   item: MusicItem;
   count: number;
   authors: NoteAuthor[];
+  latest: number;
 }
 
 function groupByItem(entries: FeedEntry[]): WeekGroup[] {
   const groups = new Map<string, WeekGroup>();
   for (const e of entries) {
-    const g = groups.get(e.note.item.id) ?? { item: e.note.item, count: 0, authors: [] };
+    const g = groups.get(e.note.item.id) ?? { item: e.note.item, count: 0, authors: [], latest: 0 };
     g.count++;
+    g.latest = Math.max(g.latest, new Date(e.note.createdAt).getTime());
     if (!g.authors.some((a) => a.id === e.author.id)) g.authors.push(e.author);
     groups.set(e.note.item.id, g);
   }
-  return [...groups.values()].sort((a, b) => b.count - a.count);
+  // Primero la obra con la nota más reciente
+  return [...groups.values()].sort((a, b) => b.latest - a.latest);
 }
 
 // La carátula de un estante; los grupos locales no suelen tener imagen
@@ -64,6 +66,9 @@ export default function Feed() {
   const [entries, setEntries] = useState<FeedEntry[]>([]);
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [listening, setListening] = useState<FeedItem[]>([]);
+  // Lo que suena en tu círculo: cada 15 s (el servidor lo cachea) y al acabar cada canción
+  const loadListening = () =>
+    api.get<FeedItem[]>("/api/feed/now-playing").then(setListening).catch(() => {});
   const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
   const [interactions, setInteractions] = useState<Map<string, NoteInteractions>>(new Map());
   const [loaded, setLoaded] = useState(false);
@@ -86,10 +91,8 @@ export default function Feed() {
     api.get<string[]>("/api/discoveries/mine").then((ids) => setSavedItems(new Set(ids)));
     api.get<Shelf>("/api/feed/shelf").then(setShelf).catch(() => {});
 
-    const loadListening = () =>
-      api.get<FeedItem[]>("/api/feed/now-playing").then(setListening).catch(() => {});
     loadListening();
-    const interval = setInterval(loadListening, 30_000);
+    const interval = setInterval(loadListening, 15_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -161,8 +164,7 @@ export default function Feed() {
       ))}
     </ul>
   );
-  const today = byDay("hoy");
-  const yesterday = byDay("ayer");
+  const today = byDay("hoy").sort(newestFirst);
   const week = groupByItem(byDay("semana"));
   const older = byDay("antes");
 
@@ -181,7 +183,7 @@ export default function Feed() {
       <div className="feed-main">
         {error && <p className="error">{error}</p>}
 
-        <LiveNow listening={listening} onNote={noteLive} />
+        <LiveNow listening={listening} onNote={noteLive} onEnded={() => setTimeout(loadListening, 1500)} />
 
         <div className="composer-pill">
           {me?.avatarUrl ? (
@@ -223,12 +225,6 @@ export default function Feed() {
               <>
                 <div className="day-sep"><span>HOY</span></div>
                 {cards(today)}
-              </>
-            )}
-            {yesterday.length > 0 && (
-              <>
-                <div className={`day-sep${today.length > 0 ? " is-past" : ""}`}><span>AYER</span></div>
-                {cards(yesterday)}
               </>
             )}
             {week.length > 0 && (

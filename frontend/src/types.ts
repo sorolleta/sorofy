@@ -72,6 +72,8 @@ export interface FeedItem {
   displayName: string;
   avatarUrl: string | null;
   nowPlaying: LiveTrack | null;
+  // Para quien no escucha nada ahora: lo último que sonó ("hace 2 h")
+  lastPlayed: { track: string; artist: string; imageUrl: string | null; playedAt: string } | null;
 }
 
 // "Te ha sonado mucho y aún no has dicho nada": tus tops sin nota tuya
