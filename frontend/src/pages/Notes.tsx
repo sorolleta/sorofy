@@ -467,7 +467,7 @@ export default function Notes() {
               <div className="form-foot">
                 {!canSave && !textTooShort && !listenUrlInvalid && (
                   <span className="section-sub">
-                    Escribe algo o ponle al menos la etiqueta.
+                    Cuéntalo con tus palabras: al menos {MIN_TEXT} caracteres.
                   </span>
                 )}
                 <button className="btn btn-quiet" onClick={() => setDraft(null)}>
