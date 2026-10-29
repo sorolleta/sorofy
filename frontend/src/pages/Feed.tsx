@@ -8,9 +8,10 @@ import type {
   MyProfile,
   NoteInteractions,
   Shelf,
-  ShelfItem,
 } from "../types";
 import LiveNow from "../components/LiveNow";
+import { SideRuta } from "../components/RutaCards";
+import type { RutaCard } from "../types";
 import NoteCard from "../components/NoteCard";
 import { loadInteractions } from "../components/NoteInteractionsBar";
 
@@ -29,21 +30,15 @@ function dayOf(iso: string): Day {
 const newestFirst = (a: FeedEntry, b: FeedEntry) =>
   new Date(b.note.createdAt).getTime() - new Date(a.note.createdAt).getTime();
 
-// La carátula de un estante; los grupos locales no suelen tener imagen
-function ShelfCover({ item }: { item: ShelfItem }) {
-  if (item.imageUrl) return <img className="shelf-cover" src={item.imageUrl} alt="" />;
-  return (
-    <span className="shelf-cover cover-placeholder">
-      {item.type === "localGroup" ? "🎺" : "♪"}
-    </span>
-  );
-}
-
 export default function Feed() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<FeedEntry[]>([]);
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [listening, setListening] = useState<FeedItem[]>([]);
+  const [sideRuta, setSideRuta] = useState<RutaCard | null>(null);
+  useEffect(() => {
+    api.get<RutaCard | undefined>("/api/rutas/side").then((c) => setSideRuta(c ?? null)).catch(() => {});
+  }, []);
   // Lo que suena en tu círculo: cada 15 s (el servidor lo cachea) y al acabar cada canción
   const loadListening = () =>
     api.get<FeedItem[]>("/api/feed/now-playing").then(setListening).catch(() => {});
@@ -117,7 +112,8 @@ export default function Feed() {
     );
   };
 
-  const hasPanel = Boolean(shelf && (shelf.weekly.length > 0 || shelf.recent.length > 0));
+  // La columna derecha: ruta destacada («Por dónde empezar») + recién anotado
+  const hasPanel = true;
 
   // "Anotar" desde lo que suena: abre Notas con la canción ya elegida
   const noteLive = (t: LiveTrack) =>
@@ -219,21 +215,12 @@ export default function Feed() {
           lo recién anotado y quién está escuchando ahora mismo */}
       {hasPanel && (
         <aside className="listening-panel">
-          {shelf && shelf.weekly.length > 0 && (
-            <>
-              <div className="shelf-head">
-                <h2 className="section-title shelf-title-sm">De lo que habla tu gente</h2>
-              </div>
-              <div className="shelf-row">
-                {shelf.weekly.map((item) => (
-                  <Link key={item.id} to={`/musica/${item.id}`} className="shelf-item">
-                    <ShelfCover item={item} />
-                    <span className="shelf-title">{item.name}</span>
-                    <span className="shelf-sub">{item.artistName ?? item.category ?? ""}</span>
-                  </Link>
-                ))}
-              </div>
-            </>
+          {sideRuta ? (
+            <SideRuta card={sideRuta} />
+          ) : (
+            <Link to="/listas" className="ruta-empty-cta">
+              ¿Con quién quieres empezar? Pídeselo a tu gente →
+            </Link>
           )}
 
           {shelf && shelf.recent.length > 0 && (

@@ -368,3 +368,60 @@ export interface ListaDetail {
   isSavedByMe: boolean;
   items: ListaItemEntry[];
 }
+
+// ---------- Rutas de escucha («Por dónde empezar») ----------
+export interface RutaNode {
+  id: string;
+  spotifyId: string | null;
+  itemType: "album" | "track";
+  title: string;
+  artist: string | null;
+  year: string | null;
+  imageUrl: string | null;
+  isStart: boolean;
+  lead: string | null;
+  leadText: string | null;
+  edgeLead: string | null;
+  edge: string | null;
+  why: string | null;
+}
+
+export interface RutaBranch {
+  label: string;
+  bridgeLead: string | null;
+  bridge: string | null;
+  nodes: RutaNode[];
+}
+
+export interface RutaCard {
+  id: string;
+  title: string;
+  intro: string | null;
+  artistName: string;
+  author: { id: string; displayName: string; avatarUrl: string | null; province: string | null };
+  nodeCount: number;
+  branchCount: number;
+  start: { title: string; imageUrl: string | null; lead: string | null; leadText: string | null; why: string | null } | null;
+  strip: { title: string; imageUrl: string | null }[];
+  isMine: boolean;
+  updatedAt: string;
+}
+
+export interface RutaDetail {
+  card: RutaCard;
+  branches: RutaBranch[];
+  done: string[];
+  isSaved: boolean;
+  forkedFrom: { id: string; title: string; authorName: string } | null;
+  artistSpotifyId: string | null;
+  answersRequestId: string | null;
+}
+
+export interface RutaRequestItem {
+  id: string;
+  artistName: string;
+  artistSpotifyId: string | null;
+  createdAt: string;
+  isMine: boolean;
+  from: { id: string; displayName: string; avatarUrl: string | null };
+}

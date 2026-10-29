@@ -16,6 +16,7 @@ import ChatThread from "./pages/ChatThread";
 import Ecos from "./pages/Ecos";
 import Listas from "./pages/Listas";
 import ListaDetail from "./pages/ListaDetail";
+import Ruta from "./pages/Ruta";
 
 function SpotifyIcon() {
   return (
@@ -187,6 +188,7 @@ export default function App() {
         <Route path="/ecos" element={<Layout><Ecos /></Layout>} />
         <Route path="/listas" element={<Layout><Listas /></Layout>} />
         <Route path="/listas/:id" element={<Layout><ListaDetail /></Layout>} />
+        <Route path="/rutas/:id" element={<Layout wide><Ruta /></Layout>} />
       </Routes>
     </BrowserRouter>
   );
