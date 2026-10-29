@@ -139,10 +139,20 @@ public class FeedService(
 
         foreach (var user in following)
         {
-            // Perfiles de ejemplo e invitados no tienen Spotify: ni se pregunta
-            var hasSpotify = !user.SpotifyId.StartsWith("demo-") && !user.SpotifyId.StartsWith("guest-");
-            var (now, last) = hasSpotify ? await GetLiveStateAsync(user.Id) : (null, null);
-            feed.Add(new FeedItem(user.Id, user.DisplayName, user.AvatarUrl, now, last));
+            feed.Add(await LiveItemAsync(user));
+        }
+
+        // Si nadie de tu gente suena ahora (o no sigues a nadie, como los
+        // invitados), el directo se llena con los perfiles de ejemplo de la demo
+        if (!feed.Any(i => i.NowPlaying is not null))
+        {
+            var followed = following.Select(u => u.Id).ToHashSet();
+            var demos = (await users.GetAllExceptAsync(userId))
+                .Where(u => u.SpotifyId.StartsWith("demo-") && !followed.Contains(u.Id));
+            foreach (var demo in demos)
+            {
+                feed.Add(await LiveItemAsync(demo));
+            }
         }
 
         // Primero quienes escuchan ahora; detrás, quien sonó hace menos
@@ -150,6 +160,59 @@ public class FeedService(
             .OrderByDescending(i => i.NowPlaying is not null)
             .ThenByDescending(i => i.LastPlayed?.PlayedAt)
             .ToList();
+    }
+
+    private async Task<FeedItem> LiveItemAsync(Models.User user)
+    {
+        // Invitados: sin Spotify, nunca suenan. Perfiles de ejemplo: escucha
+        // simulada con sus tops. El resto: lo que dice su Spotify.
+        var (now, last) = user.SpotifyId.StartsWith("guest-")
+            ? (null, null)
+            : user.SpotifyId.StartsWith("demo-")
+                ? DemoLiveState(user, await tops.GetTopTracksAsync(user.Id))
+                : await GetLiveStateAsync(user.Id);
+        return new FeedItem(user.Id, user.DisplayName, user.AvatarUrl, now, last);
+    }
+
+    // La escucha de un perfil de ejemplo: va pasando por sus canciones
+    // favoritas como si fuera una cola de reproducción, siempre igual para un
+    // mismo momento (todos los visitantes ven lo mismo). Una hora de cada
+    // cuatro "descansa" y aparece como inactivo con lo último que sonó.
+    private static (NowPlayingInfo?, LastPlayedInfo?) DemoLiveState(Models.User user, List<Models.TopTrack> tracks)
+    {
+        if (tracks.Count == 0) return (null, null);
+        var seed = (int)(StableHash(user.Id.ToString()) % 1000);
+        var durations = tracks.Select(t => 150_000 + (int)(StableHash(t.SpotifyTrackId) % 110_000)).ToList();
+        var cycle = durations.Sum();
+        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        var hour = (int)(nowMs / 3_600_000);
+        if ((hour + seed) % 4 == 0)
+        {
+            var lastTrack = tracks[(hour + seed) % tracks.Count];
+            var restedFor = TimeSpan.FromMilliseconds(nowMs % 3_600_000 + 20 * 60_000);
+            return (null, new LastPlayedInfo(lastTrack.Name, lastTrack.ArtistName, lastTrack.ImageUrl, DateTime.UtcNow - restedFor));
+        }
+
+        var position = (nowMs + seed * 7_919L) % cycle;
+        for (var i = 0; i < tracks.Count; i++)
+        {
+            if (position < durations[i])
+            {
+                var t = tracks[i];
+                return (new NowPlayingInfo(t.Name, t.ArtistName, t.SpotifyTrackId, t.ImageUrl, (int)position, durations[i]), null);
+            }
+            position -= durations[i];
+        }
+        return (null, null);
+    }
+
+    // Hash estable entre reinicios (string.GetHashCode cambia en cada arranque)
+    private static uint StableHash(string text)
+    {
+        uint hash = 2166136261;
+        foreach (var c in text) hash = (hash ^ c) * 16777619;
+        return hash;
     }
 
     private async Task<(NowPlayingInfo?, LastPlayedInfo?)> GetLiveStateAsync(Guid userId)
