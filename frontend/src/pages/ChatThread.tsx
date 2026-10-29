@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import type { HubConnection } from "@microsoft/signalr";
 import { api, getMyUserId } from "../api";
 import { createChatConnection } from "../chat";
-import type { ChatMessage, Conversation, UserProfile } from "../types";
+import type { ChatMessage, Conversation, RutaCard, RutaDetail, UserProfile } from "../types";
+import { RutaBubble } from "../components/RutaCards";
+
+// Una ruta compartida viaja como enlace dentro del mensaje: …/rutas/{id}
+const RUTA_LINK = /https?:\/\/\S*\/rutas\/([0-9a-f-]{36})\S*/i;
 
 export default function ChatThread() {
   const { id } = useParams();
@@ -17,6 +21,20 @@ export default function ChatThread() {
   const [text, setText] = useState(() => (location.state as { prefill?: string } | null)?.prefill ?? "");
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
+  // Tarjetas de las rutas compartidas en esta conversación (id → tarjeta)
+  const [rutaCards, setRutaCards] = useState<Map<string, RutaCard | null>>(new Map());
+  useEffect(() => {
+    const ids = [...new Set(messages.map((m) => RUTA_LINK.exec(m.text)?.[1]).filter((x): x is string => !!x))];
+    const missing = ids.filter((rid) => !rutaCards.has(rid));
+    if (missing.length === 0) return;
+    Promise.all(
+      missing.map((rid) =>
+        api.get<RutaDetail>(`/api/rutas/${rid}`).then((d) => [rid, d.card] as const).catch(() => [rid, null] as const),
+      ),
+    ).then((found) => setRutaCards((prev) => new Map([...prev, ...found])));
+    // rutaCards solo se consulta para no repetir peticiones
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
   const connectionRef = useRef<HubConnection | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -126,12 +144,17 @@ export default function ChatThread() {
         {messages.length === 0 && (
           <p className="empty-state">Aún no hay mensajes. ¡Rompe el hielo!</p>
         )}
-        {messages.map((message) => (
+        {messages.map((message) => {
+          const rutaId = RUTA_LINK.exec(message.text)?.[1];
+          const card = rutaId ? rutaCards.get(rutaId) : undefined;
+          const text = card ? message.text.replace(RUTA_LINK, "").trim() : message.text;
+          return (
+          <Fragment key={message.id}>
+          {text && (
           <div
-            key={message.id}
             className={message.senderId === myId ? "bubble bubble-mine" : "bubble bubble-theirs"}
           >
-            <p>{message.text}</p>
+            <p>{text}</p>
             <span className="bubble-time">
               {new Date(message.sentAt).toLocaleTimeString([], {
                 hour: "2-digit",
@@ -139,7 +162,11 @@ export default function ChatThread() {
               })}
             </span>
           </div>
-        ))}
+          )}
+          {card && <RutaBubble card={card} mine={message.senderId === myId} />}
+          </Fragment>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 

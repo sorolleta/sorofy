@@ -13,6 +13,8 @@ import { loadInteractions } from "../components/NoteInteractionsBar";
 import PlatformPlayer from "../components/PlatformPlayer";
 import { resolveVibe } from "../vibes";
 import AddToLista from "../components/AddToLista";
+import { RutaCardSmall } from "../components/RutaCards";
+import type { RutaCard } from "../types";
 
 const TYPE_LABEL: Record<string, string> = {
   album: "álbum",
@@ -51,6 +53,8 @@ export default function MusicItemDetail() {
   // El panel de Instagram es una maqueta: solo enseña ejemplos plegados
   const [showIgPosts, setShowIgPosts] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  // Fichas de artista: las rutas de escucha de tu gente sobre él
+  const [rutas, setRutas] = useState<RutaCard[]>([]);
 
   useEffect(() => {
     setDetail(null);
@@ -60,6 +64,11 @@ export default function MusicItemDetail() {
       .then((d) => {
         setDetail(d);
         setFollowing(d.item.isFollowedByMe);
+        setRutas([]);
+        if (d.item.type === "artist") {
+          const q = new URLSearchParams({ name: d.item.name, ...(d.item.spotifyId ? { spotifyId: d.item.spotifyId } : {}) });
+          api.get<RutaCard[]>(`/api/rutas/artist?${q}`).then(setRutas).catch(() => {});
+        }
         loadInteractions(d.notes.map((n) => n.note.id)).then(setInteractions).catch(() => {});
       })
       .catch(() => setError("Este item no existe o no se pudo cargar"));
@@ -305,6 +314,31 @@ export default function MusicItemDetail() {
           title={item.name}
         />
       </header>
+
+      {/* «¿Por dónde empiezo?»: rutas de escucha sobre este artista; si no hay, solo «Haz la tuya» */}
+      {item.type === "artist" && (
+        <section className="ruta-entry">
+          <div className="ruta-entry-head">
+            <div>
+              <span className="ruta-kicker">RUTAS DE TU GENTE</span>
+              <h2 className="section-title">¿Por dónde empiezo con {item.name}?</h2>
+            </div>
+            <Link
+              className="btn btn-quiet btn-sm"
+              to={`/rutas/nueva?${new URLSearchParams({ artista: item.name, ...(item.spotifyId ? { spotifyId: item.spotifyId } : {}) })}`}
+            >
+              ＋ Haz la tuya
+            </Link>
+          </div>
+          {rutas.length > 0 && (
+            <div className="ruta-entry-row">
+              {rutas.map((r) => (
+                <RutaCardSmall key={r.id} card={r} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="album-cols">
         <div className="side-stack">

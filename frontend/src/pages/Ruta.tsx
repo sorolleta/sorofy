@@ -745,7 +745,7 @@ function SharePanel({ rutaId, title, onClose }: { rutaId: string; title: string;
       {people === null && <p className="section-sub">Cargando…</p>}
       <div className="rt-share-list">
         {people?.map((p) => (
-          <button key={p.id} onClick={() => navigate(`/chats/${p.id}`, { state: { prefill: `Te paso esta ruta: ${title} ${url}` } })}>
+          <button key={p.id} onClick={() => navigate(`/chats/${p.id}`, { state: { prefill: `Te paso esta ruta para empezar: ${title} ${url}` } })}>
             <AuthorAvatar name={p.displayName} url={p.avatarUrl} />
             {p.displayName}
           </button>

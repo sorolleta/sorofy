@@ -17,6 +17,9 @@ inventados, para que la app no esté vacía al entrar.
 - **Perfil y trío** — tus tops de Spotify y las tres canciones que te definen.
 - **Grupos locales** — bandas y proyectos de tu provincia: seguidores, fotos, vídeos y repertorio.
 - **Listas** — estanterías hechas a mano, con un "porqué" en cada canción.
+- **Rutas de escucha** — «Por dónde empezar»: mapas de discos para entrar en un artista de la mano
+  de quien ya lo conoce, con ramas, el porqué de cada paso y tu progreso privado. Se pueden pedir,
+  copiar («Hacer la mía») y compartir por chat.
 - **Ecos** — el rastro de lo que tus notas han movido.
 - **Chats** — mensajes en tiempo real.
 

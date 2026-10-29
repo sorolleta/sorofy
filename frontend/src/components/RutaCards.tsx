@@ -131,11 +131,12 @@ export function PdeHero({ card }: { card: Card }) {
 
 // Una ruta compartida en un chat
 export function RutaBubble({ card, mine }: { card: Card; mine: boolean }) {
+  // La burbuja se alinea como un mensaje: a la derecha si lo mandaste tú
   return (
     <Link to={`/rutas/${card.id}`} className="bubble-ruta" style={mine ? { alignSelf: "flex-end" } : undefined}>
       <RutaArt url={card.strip[0]?.imageUrl} />
       <div className="bubble-ruta-info">
-        <span>{mine ? "Le pasaste tu ruta" : "Te pasa su ruta"}</span>
+        <span>{card.isMine ? "Te paso mi ruta" : `Ruta de ${firstName(card.author.displayName)}`}</span>
         <strong>{card.title}</strong>
       </div>
       <span className="bubble-ruta-go">→</span>
