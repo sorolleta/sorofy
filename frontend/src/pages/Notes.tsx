@@ -1,7 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { api } from "../api";
-import type { LocalGroup, LocalGroupOptions, Note, SearchArtist, SearchResponse } from "../types";
+import { api, getMe } from "../api";
+import type {
+  LocalGroup,
+  LocalGroupOptions,
+  Note,
+  SearchArtist,
+  SearchResponse,
+  Shelf,
+  ShelfItem,
+  TopTrack,
+} from "../types";
 import NoteList from "../components/NoteList";
 
 // Lo que hace falta para abrir el formulario: un item de Spotify, un grupo
@@ -75,6 +84,7 @@ export default function Notes() {
   // en las notas viejas (se conservan al editar, ya no se eligen)
   const [vibeColor, setVibeColor] = useState<string | null>(null);
   const [vibeEmoji, setVibeEmoji] = useState<string | null>(null);
+  // Ya no se elige etiqueta al escribir; solo se conserva la de notas antiguas al editarlas
   const [vibeLabel, setVibeLabel] = useState("");
   // "Escúchalo aquí": enlace opcional al audio exacto del que habla la nota
   const [listenUrl, setListenUrl] = useState("");
@@ -93,7 +103,6 @@ export default function Notes() {
   const [newGroupProvince, setNewGroupProvince] = useState("");
   const [groupOptions, setGroupOptions] = useState<LocalGroupOptions | null>(null);
   // Sugerencias para la etiqueta del vibe: las que ya usó la comunidad
-  const [vibeLabels, setVibeLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -106,10 +115,6 @@ export default function Notes() {
 
   useEffect(() => {
     api.get<LocalGroupOptions>("/api/local-groups/options").then(setGroupOptions).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    api.get<string[]>("/api/notes/vibe-labels").then(setVibeLabels).catch(() => {});
   }, []);
 
   // Texto escrito en el composer rápido del feed, a la espera de que aquí
@@ -137,26 +142,66 @@ export default function Notes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const search = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  // Búsqueda en tiempo real: se lanza sola al dejar de teclear un momento.
+  // El contador descarta respuestas viejas que lleguen tarde.
+  const searchSeq = useRef(0);
+  const runSearch = async (raw: string) => {
+    const seq = ++searchSeq.current;
     setSearching(true);
     setError("");
     try {
       // Spotify y nuestros grupos locales se buscan a la vez
-      const q = encodeURIComponent(query.trim());
+      const q = encodeURIComponent(raw);
       const [spotify, groups] = await Promise.all([
         api.get<SearchResponse>(`/api/search?q=${q}`),
         api.get<LocalGroup[]>(`/api/local-groups?query=${q}`),
       ]);
+      if (seq !== searchSeq.current) return;
       setResults(spotify);
       setLocalGroups(groups);
     } catch {
-      setError("No se pudo buscar");
+      if (seq === searchSeq.current) setError("No se pudo buscar");
     } finally {
-      setSearching(false);
+      if (seq === searchSeq.current) setSearching(false);
     }
   };
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      searchSeq.current++;
+      setResults(null);
+      setLocalGroups([]);
+      setSearching(false);
+      return;
+    }
+    const timer = setTimeout(() => runSearch(q), 350);
+    return () => clearTimeout(timer);
+    // runSearch solo depende de query
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Enter busca ya, sin esperar la pausa
+  const search = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim().length >= 2) runSearch(query.trim());
+  };
+
+  // Ejemplos antes de escribir: tus canciones de Spotify y lo que anota la gente
+  const [myTopTracks, setMyTopTracks] = useState<TopTrack[]>([]);
+  const [communityItems, setCommunityItems] = useState<ShelfItem[]>([]);
+  useEffect(() => {
+    getMe().then((me) => setMyTopTracks(me.topTracks.slice(0, 6))).catch(() => {});
+    api
+      .get<Shelf>("/api/feed/shelf")
+      .then((shelf) => {
+        const seen = new Set<string>();
+        setCommunityItems(
+          [...shelf.weekly, ...shelf.recent].filter((i) => !seen.has(i.id) && seen.add(i.id)).slice(0, 6),
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   const openDraft = (draft: Draft) => {
     setTab("buscar");
@@ -283,7 +328,7 @@ export default function Notes() {
   const textTooShort = text.trim() !== "" && text.trim().length < MIN_TEXT;
   const listenUrlInvalid = listenUrl.trim() !== "" && !isListenUrlValid(listenUrl.trim());
   const canSave =
-    (text.trim().length >= MIN_TEXT || (text.trim() === "" && vibeLabel.trim() !== "")) &&
+    text.trim().length >= MIN_TEXT &&
     !listenUrlInvalid;
 
   const tabButton = (id: Tab, label: string) => (
@@ -337,32 +382,6 @@ export default function Notes() {
                 {textTooShort && (
                   <span className="field-error">
                     Cuéntanos un poco más: una nota necesita al menos {MIN_TEXT} caracteres.
-                  </span>
-                )}
-              </div>
-
-              <div className="field">
-                <label>Ponle una etiqueta (opcional)</label>
-                <input
-                  type="text"
-                  placeholder="Tu etiqueta, ej. Mar de invierno"
-                  maxLength={40}
-                  value={vibeLabel}
-                  onChange={(e) => setVibeLabel(e.target.value)}
-                  list="vibe-label-suggestions"
-                />
-                {vibeLabels.length > 0 && (
-                  <datalist id="vibe-label-suggestions">
-                    {vibeLabels.map((label) => (
-                      <option key={label} value={label} />
-                    ))}
-                  </datalist>
-                )}
-                {/* Preview en vivo: el chip tal y como se verá en la tarjeta */}
-                {vibeLabel && (
-                  <span className="vibe-chip vibe-chip-plain">
-                    {vibeEmoji && <span>{vibeEmoji}</span>}
-                    {vibeLabel}
                   </span>
                 )}
               </div>
@@ -479,6 +498,51 @@ export default function Notes() {
               </div>
             )}
             {!draft && error && <p className="field-error">{error}</p>}
+
+            {!results && !searching && query.trim().length < 2 && (
+              <>
+                {myTopTracks.length > 0 && (
+                  <>
+                    <div className="search-cat">De lo que más escuchas</div>
+                    {myTopTracks.map((track) => (
+                      <ResultRow
+                        key={track.spotifyTrackId}
+                        imageUrl={track.imageUrl}
+                        name={track.name}
+                        sub={track.artistName}
+                        onPick={() =>
+                          openDraft({
+                            itemType: "track",
+                            spotifyItemId: track.spotifyTrackId,
+                            name: track.name,
+                            artistName: track.artistName,
+                          })
+                        }
+                      />
+                    ))}
+                  </>
+                )}
+                {communityItems.length > 0 && (
+                  <>
+                    <div className="search-cat">Lo que está anotando la gente</div>
+                    {communityItems.map((item) => (
+                      <ResultRow
+                        key={item.id}
+                        imageUrl={item.imageUrl}
+                        fallback={item.type === "localGroup" ? "🎪" : undefined}
+                        round={item.type === "artist"}
+                        name={item.name}
+                        sub={
+                          item.artistName ??
+                          (item.type === "localGroup" ? item.category ?? "grupo local" : item.type === "artist" ? "artista" : "")
+                        }
+                        onPick={() => openDraft({ musicItemId: item.id, name: item.name, artistName: item.artistName })}
+                      />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
 
             {results && (
               <>
