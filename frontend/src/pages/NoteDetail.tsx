@@ -154,8 +154,8 @@ export default function NoteDetail() {
         className="note-hero"
         // El hero se tiñe con el vibe de la nota; sin vibe, rojo tenue
         style={{
-          background: `linear-gradient(160deg, ${vibe?.hex ?? "#e11900"}29, ${
-            vibe?.hex ?? "#e11900"
+          background: `linear-gradient(160deg, ${vibe?.hex ?? "#7b6cff"}29, ${
+            vibe?.hex ?? "#7b6cff"
           }0d 70%)`,
         }}
       >

@@ -170,7 +170,7 @@ export default function Onboarding() {
         <div className="onb-step is-active">
           {stepHead(
             "🎧",
-            "linear-gradient(135deg,var(--accent),#7a1200)",
+            "linear-gradient(135deg,var(--accent),#3a3466)",
             1,
             "¿Cómo escuchas?",
             "Elige de 3 a 4 sensibilidades. No son géneros: son maneras de escuchar. Solo las verás tú.",
