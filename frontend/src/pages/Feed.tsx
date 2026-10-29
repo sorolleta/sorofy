@@ -5,9 +5,7 @@ import type {
   FeedEntry,
   FeedItem,
   LiveTrack,
-  MusicItem,
   MyProfile,
-  NoteAuthor,
   NoteInteractions,
   Shelf,
   ShelfItem,
@@ -30,26 +28,6 @@ function dayOf(iso: string): Day {
 }
 const newestFirst = (a: FeedEntry, b: FeedEntry) =>
   new Date(b.note.createdAt).getTime() - new Date(a.note.createdAt).getTime();
-
-interface WeekGroup {
-  item: MusicItem;
-  count: number;
-  authors: NoteAuthor[];
-  latest: number;
-}
-
-function groupByItem(entries: FeedEntry[]): WeekGroup[] {
-  const groups = new Map<string, WeekGroup>();
-  for (const e of entries) {
-    const g = groups.get(e.note.item.id) ?? { item: e.note.item, count: 0, authors: [], latest: 0 };
-    g.count++;
-    g.latest = Math.max(g.latest, new Date(e.note.createdAt).getTime());
-    if (!g.authors.some((a) => a.id === e.author.id)) g.authors.push(e.author);
-    groups.set(e.note.item.id, g);
-  }
-  // Primero la obra con la nota más reciente
-  return [...groups.values()].sort((a, b) => b.latest - a.latest);
-}
 
 // La carátula de un estante; los grupos locales no suelen tener imagen
 function ShelfCover({ item }: { item: ShelfItem }) {
@@ -165,8 +143,8 @@ export default function Feed() {
     </ul>
   );
   const today = byDay("hoy").sort(newestFirst);
-  const week = groupByItem(byDay("semana"));
-  const older = byDay("antes");
+  // Lo de antes de hoy, en tarjetas (sin el resumen por disco de "esta semana")
+  const older = entries.filter((e) => dayOf(e.note.createdAt) !== "hoy");
 
   if (!loaded) {
     return (
@@ -185,7 +163,7 @@ export default function Feed() {
 
         <LiveNow listening={listening} onNote={noteLive} onEnded={() => setTimeout(loadListening, 1500)} />
 
-        <div className="composer-pill">
+        <div className="composer-box">
           {me?.avatarUrl ? (
             <img className="note-avatar" style={{ width: 32, height: 32, flex: "none" }} src={me.avatarUrl} alt="" />
           ) : (
@@ -195,13 +173,13 @@ export default function Feed() {
           )}
           <textarea
             className="composer-textarea"
-            rows={1}
-            placeholder="¿Qué te ha llegado hoy?"
+            rows={3}
+            placeholder="¿Qué te ha llegado hoy? Escribe tu nota…"
             value={composerText}
             onChange={(e) => updateComposerText(e.target.value)}
           />
           <button className="btn btn-quiet btn-sm" onClick={goFinishInNotes} title="Vincular canción o grupo">
-            🎵
+            🎵 Vincular canción
           </button>
           <button className="btn btn-primary btn-sm" disabled={!composerText.trim()} onClick={goFinishInNotes}>
             Publicar
@@ -227,44 +205,9 @@ export default function Feed() {
                 {cards(today)}
               </>
             )}
-            {week.length > 0 && (
-              <>
-                <div className="day-sep is-past"><span>ESTA SEMANA</span></div>
-                <div className="week-group">
-                  {week.map((g) => (
-                    <Link key={g.item.id} to={`/musica/${g.item.id}`} className="week-row">
-                      {g.item.imageUrl ? (
-                        <img className="week-cover" src={g.item.imageUrl} alt="" />
-                      ) : (
-                        <span className="week-cover cover-placeholder">{g.item.type === "localGroup" ? "🎺" : "♪"}</span>
-                      )}
-                      <span className="week-info">
-                        <strong>{g.item.name}</strong>
-                        <span>
-                          {g.item.artistName ?? g.item.category ?? ""}
-                          {(g.item.artistName ?? g.item.category) && " · "}
-                          {g.count} {g.count === 1 ? "nota" : "notas"}
-                        </span>
-                      </span>
-                      <span className="week-faces">
-                        {g.authors.slice(0, 3).map((a) =>
-                          a.avatarUrl ? (
-                            <img key={a.id} src={a.avatarUrl} alt={a.displayName} title={a.displayName} />
-                          ) : (
-                            <span key={a.id} className="avatar-placeholder" title={a.displayName}>
-                              {a.displayName[0]?.toUpperCase()}
-                            </span>
-                          ),
-                        )}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
             {older.length > 0 && (
               <>
-                <div className="day-sep is-past"><span>ANTES</span></div>
+                {today.length > 0 && <div className="day-sep is-past"><span>ANTES</span></div>}
                 {cards(older)}
               </>
             )}

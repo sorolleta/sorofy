@@ -11,7 +11,7 @@ namespace SameSpot.Api.Data;
 // Se activa con SEED_DEMO=true y solo corre una vez: si ya hay usuarios
 // "demo-", no hace nada. Las canciones se buscan en Spotify con las
 // credenciales de la app para que tengan carátula e id reales.
-public class DemoSeeder(AppDbContext db, IConfiguration config, ILogger<DemoSeeder> logger)
+public partial class DemoSeeder(AppDbContext db, IConfiguration config, ILogger<DemoSeeder> logger)
 {
     private const string DemoPrefix = "demo-";
     private readonly HttpClient _http = new();

@@ -15,6 +15,7 @@ import type {
 } from "../types";
 import { LiveEq } from "../components/LiveNow";
 import { ripple } from "../ripple";
+import AddToLista, { type ListaTarget } from "../components/AddToLista";
 import NoteList from "../components/NoteList";
 
 // Lo que hace falta para abrir el formulario: un item de Spotify, un grupo
@@ -56,6 +57,7 @@ function ResultRow({
   sub,
   live,
   onPick,
+  onList,
 }: {
   imageUrl: string | null;
   round?: boolean;
@@ -65,6 +67,8 @@ function ResultRow({
   // "Tú la estás escuchando": coincide con lo que suena en tu Spotify
   live?: boolean;
   onPick: () => void;
+  // "＋ Lista": añadirla a una de tus estanterías sin escribir nota
+  onList?: () => void;
 }) {
   const coverClass = `result-cover${round ? " is-round" : ""}`;
   const pick = (e: React.MouseEvent<HTMLElement>) => {
@@ -90,6 +94,18 @@ function ResultRow({
           sub && <small>{sub}</small>
         )}
       </div>
+      {onList && (
+        <button
+          className="btn btn-quiet btn-sm"
+          title="Añadir a una estantería"
+          onClick={(e) => {
+            e.stopPropagation();
+            onList();
+          }}
+        >
+          ＋ Lista
+        </button>
+      )}
       <button
         className="btn btn-quiet btn-sm"
         data-note-track
@@ -229,6 +245,13 @@ export default function Notes() {
     api.get<UnnotedTrack[]>("/api/me/unnoted").then(setUnnoted).catch(() => {});
   }, []);
   const myNowId = myNow?.playing ? myNow.spotifyId ?? null : null;
+
+  // "＋ Lista" en un resultado: qué se está añadiendo a una estantería
+  const [listaPick, setListaPick] = useState<{ name: string; target: ListaTarget } | null>(null);
+  const toList = (name: string, target: ListaTarget) => () => {
+    setListaPick({ name, target });
+    window.scrollTo({ top: (document.querySelector(".search-panel") as HTMLElement | null)?.offsetTop ?? 0, behavior: "smooth" });
+  };
 
   // Ejemplos antes de escribir: tus canciones de Spotify y lo que anota la gente
   const [myTopTracks, setMyTopTracks] = useState<TopTrack[]>([]);
@@ -556,11 +579,19 @@ export default function Notes() {
 
       {tab === "buscar" && (
         <div className="tab-panel is-active">
-          <div className="notas-grid">
+          <div className={draft ? "notas-grid" : "notas-single"}>
           <section className="panel search-panel">
             <h3 className="section-title" style={{ fontSize: "1.05rem" }}>
               {results ? `Resultados para «${query.trim()}»` : "Para empezar"}
             </h3>
+            {listaPick && (
+              <div className="lista-pick">
+                <span className="section-sub">
+                  Añadir <strong style={{ color: "var(--text)" }}>{listaPick.name}</strong> a una estantería
+                </span>
+                <AddToLista key={listaPick.name} target={listaPick.target} startOpen onDone={() => setListaPick(null)} />
+              </div>
+            )}
             {searching && (
               <div className="loading-state">
                 <span className="spinner" />
@@ -580,6 +611,7 @@ export default function Notes() {
                         imageUrl={track.imageUrl}
                         name={track.name}
                         sub={track.artistName}
+                        onList={toList(track.name, { itemType: "track", spotifyItemId: track.spotifyTrackId })}
                         onPick={() =>
                           openDraft({
                             itemType: "track",
@@ -606,6 +638,7 @@ export default function Notes() {
                           item.artistName ??
                           (item.type === "localGroup" ? item.category ?? "grupo local" : item.type === "artist" ? "artista" : "")
                         }
+                        onList={toList(item.name, { musicItemId: item.id })}
                         onPick={() => openDraft({ musicItemId: item.id, name: item.name, artistName: item.artistName })}
                       />
                     ))}
@@ -625,6 +658,7 @@ export default function Notes() {
                     name={track.name}
                     sub={track.artistName}
                     live={track.id === myNowId}
+                    onList={toList(track.name, { itemType: "track", spotifyItemId: track.id })}
                     onPick={() =>
                       openDraft({
                         itemType: "track",
@@ -644,6 +678,7 @@ export default function Notes() {
                     imageUrl={album.imageUrl}
                     name={album.name}
                     sub={album.artistName}
+                    onList={toList(album.name, { itemType: "album", spotifyItemId: album.id })}
                     onPick={() =>
                       openDraft({
                         itemType: "album",
@@ -683,6 +718,7 @@ export default function Notes() {
                     fallback="🎪"
                     name={group.name}
                     sub={group.description}
+                    onList={toList(group.name, { musicItemId: group.id })}
                     onPick={() => openDraft({ musicItemId: group.id, name: group.name })}
                   />
                 ))}

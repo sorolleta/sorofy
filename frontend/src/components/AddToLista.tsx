@@ -1,12 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { ListaCard } from "../types";
 
-// "Añadir a una estantería" desde una ficha: eliges una de tus estanterías
-// y cuentas por qué encaja, como al proponer desde la propia estantería
-export default function AddToLista({ musicItemId }: { musicItemId: string }) {
-  const [open, setOpen] = useState(false);
+// Qué se añade: una ficha que ya existe, o algo de Spotify recién buscado
+export type ListaTarget =
+  | { musicItemId: string }
+  | { itemType: "track" | "album" | "artist"; spotifyItemId: string };
+
+// "Añadir a una estantería" desde una ficha o desde el buscador de Notas:
+// eliges una de tus estanterías y, si quieres, cuentas por qué encaja
+export default function AddToLista({
+  musicItemId,
+  target,
+  startOpen,
+  onDone,
+}: {
+  musicItemId?: string;
+  target?: ListaTarget;
+  startOpen?: boolean;
+  onDone?: () => void;
+}) {
+  const what: ListaTarget = target ?? { musicItemId: musicItemId! };
+  const [open, setOpen] = useState(Boolean(startOpen));
   const [mine, setMine] = useState<ListaCard[] | null>(null);
   const [listaId, setListaId] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -14,7 +30,12 @@ export default function AddToLista({ musicItemId }: { musicItemId: string }) {
   const [error, setError] = useState("");
   const [added, setAdded] = useState<ListaCard | null>(null);
 
+  useEffect(() => {
+    if (startOpen) api.get<ListaCard[]>("/api/listas/mine").then(setMine).catch(() => setMine([]));
+  }, [startOpen]);
+
   const toggle = () => {
+    if (open && onDone) onDone();
     setOpen(!open);
     setAdded(null);
     if (!mine) api.get<ListaCard[]>("/api/listas/mine").then(setMine).catch(() => setMine([]));
@@ -25,11 +46,12 @@ export default function AddToLista({ musicItemId }: { musicItemId: string }) {
     setSaving(true);
     setError("");
     try {
-      await api.post(`/api/listas/${listaId}/items`, { musicItemId, text });
+      await api.post(`/api/listas/${listaId}/items`, { ...what, text });
       setAdded(mine?.find((l) => l.id === listaId) ?? null);
       setText("");
       setListaId(null);
       setOpen(false);
+      onDone?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo añadir");
     } finally {

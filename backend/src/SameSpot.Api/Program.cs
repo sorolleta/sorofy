@@ -142,7 +142,10 @@ using (var scope = app.Services.CreateScope())
     {
         try
         {
-            await ActivatorUtilities.CreateInstance<DemoSeeder>(scope.ServiceProvider).SeedAsync();
+            var seeder = ActivatorUtilities.CreateInstance<DemoSeeder>(scope.ServiceProvider);
+            await seeder.SeedAsync();
+            // Las rutas de escucha llegaron después: se siembran aparte (una vez)
+            await seeder.SeedRutasAsync();
         }
         catch (Exception ex)
         {

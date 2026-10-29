@@ -158,6 +158,32 @@ namespace SameSpot.Api.Data.Migrations
                     b.ToTable("GroupPhotos");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.GroupVideo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MusicItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MusicItemId");
+
+                    b.ToTable("GroupVideos");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Lista", b =>
                 {
                     b.Property<Guid>("Id")
@@ -439,6 +465,127 @@ namespace SameSpot.Api.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("NoteLikes");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Ruta", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnswersRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArtistName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ArtistSpotifyId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BranchesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ForkedFromId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Intro")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistName");
+
+                    b.HasIndex("AuthorId");
+
+                    b.ToTable("Rutas");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.RutaProgress", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RutaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("NodeId")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "RutaId", "NodeId");
+
+                    b.HasIndex("RutaId");
+
+                    b.ToTable("RutaProgress");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.RutaRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnsweredByRutaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArtistName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ArtistSpotifyId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FromUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUserId");
+
+                    b.ToTable("RutaRequests");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.RutaSave", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RutaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "RutaId");
+
+                    b.HasIndex("RutaId");
+
+                    b.ToTable("RutaSaves");
                 });
 
             modelBuilder.Entity("SameSpot.Api.Models.SpotifyToken", b =>
@@ -838,6 +985,17 @@ namespace SameSpot.Api.Data.Migrations
                     b.Navigation("UploadedByUser");
                 });
 
+            modelBuilder.Entity("SameSpot.Api.Models.GroupVideo", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.MusicItem", "MusicItem")
+                        .WithMany()
+                        .HasForeignKey("MusicItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MusicItem");
+                });
+
             modelBuilder.Entity("SameSpot.Api.Models.Lista", b =>
                 {
                     b.HasOne("SameSpot.Api.Models.User", "Curator")
@@ -984,6 +1142,66 @@ namespace SameSpot.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Note");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.Ruta", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.RutaProgress", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.Ruta", "Ruta")
+                        .WithMany()
+                        .HasForeignKey("RutaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ruta");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.RutaRequest", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.User", "FromUser")
+                        .WithMany()
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FromUser");
+                });
+
+            modelBuilder.Entity("SameSpot.Api.Models.RutaSave", b =>
+                {
+                    b.HasOne("SameSpot.Api.Models.Ruta", "Ruta")
+                        .WithMany()
+                        .HasForeignKey("RutaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SameSpot.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ruta");
 
                     b.Navigation("User");
                 });

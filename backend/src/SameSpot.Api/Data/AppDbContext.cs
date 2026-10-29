@@ -25,6 +25,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ListaSave> ListaSaves => Set<ListaSave>();
     public DbSet<GroupPhoto> GroupPhotos => Set<GroupPhoto>();
     public DbSet<GroupVideo> GroupVideos => Set<GroupVideo>();
+    public DbSet<Ruta> Rutas => Set<Ruta>();
+    public DbSet<RutaProgress> RutaProgress => Set<RutaProgress>();
+    public DbSet<RutaSave> RutaSaves => Set<RutaSave>();
+    public DbSet<RutaRequest> RutaRequests => Set<RutaRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -390,6 +394,39 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(v => v.MusicItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Rutas de escucha: las ramas viajan como JSON (jsonb) en la propia ruta
+        modelBuilder.Entity<Ruta>()
+            .Property(r => r.BranchesJson)
+            .HasColumnType("jsonb");
+        modelBuilder.Entity<Ruta>().Property(r => r.Title).HasMaxLength(120);
+        modelBuilder.Entity<Ruta>().Property(r => r.Intro).HasMaxLength(600);
+        modelBuilder.Entity<Ruta>().Property(r => r.ArtistName).HasMaxLength(200);
+        modelBuilder.Entity<Ruta>().HasIndex(r => r.ArtistName);
+        modelBuilder.Entity<Ruta>()
+            .HasOne(r => r.Author)
+            .WithMany()
+            .HasForeignKey(r => r.AuthorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RutaProgress>()
+            .HasKey(p => new { p.UserId, p.RutaId, p.NodeId });
+        modelBuilder.Entity<RutaProgress>().Property(p => p.NodeId).HasMaxLength(40);
+        modelBuilder.Entity<RutaProgress>()
+            .HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<RutaProgress>()
+            .HasOne(p => p.Ruta).WithMany().HasForeignKey(p => p.RutaId).OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RutaSave>()
+            .HasKey(sv => new { sv.UserId, sv.RutaId });
+        modelBuilder.Entity<RutaSave>()
+            .HasOne(sv => sv.User).WithMany().HasForeignKey(sv => sv.UserId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<RutaSave>()
+            .HasOne(sv => sv.Ruta).WithMany().HasForeignKey(sv => sv.RutaId).OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RutaRequest>().Property(r => r.ArtistName).HasMaxLength(200);
+        modelBuilder.Entity<RutaRequest>()
+            .HasOne(r => r.FromUser).WithMany().HasForeignKey(r => r.FromUserId).OnDelete(DeleteBehavior.Cascade);
 
         // Catálogo inicial de tags estéticos (ids fijos para el seed)
         modelBuilder.Entity<Tag>().HasData(
